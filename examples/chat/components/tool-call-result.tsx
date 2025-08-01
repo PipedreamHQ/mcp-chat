@@ -65,7 +65,7 @@ export const ToolCallResult = ({
     <Collapsible>
       <CollapsibleTrigger className="flex gap-2 items-center justify-center">
         <Check className="text-green-500" />
-        {name === 'Web_Search' ? (
+        {name === 'web_search' ? (
           <div className="flex items-center justify-center size-5 rounded-sm overflow-hidden mr-1 bg-muted/20">
             <Globe className="size-4 text-foreground/70 dark:text-white" />
           </div>

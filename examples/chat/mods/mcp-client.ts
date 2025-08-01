@@ -247,7 +247,7 @@ class MCPSessionManager {
       })
     }
 
-    tools["Web_Search"] = webSearch
+    tools["web_search"] = webSearch
 
     console.log("Tools:\n", Object.keys(tools).join(",\n"), "\n\n")
 

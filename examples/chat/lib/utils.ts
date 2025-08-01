@@ -182,9 +182,9 @@ export function getTrailingMessageId({
 
 export function prettifyToolName(name: string) {
   const specialTools: Record<string, string> = {
-    Web_Search: 'Searching the web',
-    WHAT_ARE_YOU_TRYING_TO_DO: 'Thinking deeply',
-    SELECT_APPS: 'Selecting apps',
+    web_search: 'Searching the web',
+    what_are_you_trying_to_do: 'Thinking deeply',
+    select_apps: 'Selecting apps',
   };
   if (specialTools[name]) {
     return specialTools[name];

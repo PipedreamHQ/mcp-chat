@@ -6,6 +6,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "chat": "ENV_FILE_PATH=$(pwd)/.env pnpm --filter ./examples/chat run dev",
+    "chat-groq": "ENV_FILE_PATH=$(pwd)/.env pnpm --filter ./examples/chat-groq run dev",
     "ai-sdk": "pnpm --filter ./examples/ai-sdk run start",
     "openai-sdk": "pnpm --filter ./examples/openai-sdk run start"
   },
