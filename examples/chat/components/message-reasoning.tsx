@@ -7,12 +7,12 @@ import { Markdown } from './markdown';
 
 interface MessageReasoningProps {
   isLoading: boolean;
-  reasoning: string;
+  reasoningText: string;
 }
 
 export function MessageReasoning({
   isLoading,
-  reasoning,
+  reasoningText,
 }: MessageReasoningProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 

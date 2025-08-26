@@ -16,7 +16,7 @@ test.describe('chat activity with reasoning', () => {
     const assistantMessage = await chatPage.getRecentAssistantMessage();
     expect(assistantMessage.content).toBe("It's just blue duh!");
 
-    expect(assistantMessage.reasoning).toBe(
+    expect(assistantMessage.reasoningText).toBe(
       'The sky is blue because of rayleigh scattering!',
     );
   });
@@ -55,7 +55,7 @@ test.describe('chat activity with reasoning', () => {
 
     expect(updatedAssistantMessage.content).toBe("It's just green duh!");
 
-    expect(updatedAssistantMessage.reasoning).toBe(
+    expect(updatedAssistantMessage.reasoningText).toBe(
       'Grass is green because of chlorophyll absorption!',
     );
   });

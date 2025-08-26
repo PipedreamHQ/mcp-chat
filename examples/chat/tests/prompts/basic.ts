@@ -1,6 +1,6 @@
-import { CoreMessage } from 'ai';
+import { ModelMessage } from 'ai';
 
-export const TEST_PROMPTS: Record<string, CoreMessage> = {
+export const TEST_PROMPTS: Record<string, ModelMessage> = {
   USER_SKY: {
     role: 'user',
     content: [{ type: 'text', text: 'Why is the sky blue?' }],

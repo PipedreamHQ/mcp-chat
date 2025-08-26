@@ -52,7 +52,7 @@ function PureMultimodalInput({
   setAttachments: Dispatch<SetStateAction<Array<Attachment>>>;
   messages: Array<UIMessage>;
   setMessages: UseChatHelpers['setMessages'];
-  append: UseChatHelpers['append'];
+  append: UseChatHelpers['sendMessage'];
   handleSubmit: UseChatHelpers['handleSubmit'];
   className?: string;
 }) {

@@ -17,8 +17,6 @@ import { getEffectiveSession, shouldPersistData } from "@/lib/auth-utils"
 import { MCPSessionManager } from "@/mods/mcp-client"
 import {
   UIMessage,
-  appendResponseMessages,
-  createDataStreamResponse,
   smoothStream,
 } from "ai"
 import { generateTitleFromUserMessage } from "../../actions"
@@ -142,65 +140,117 @@ export async function POST(request: Request) {
     console.log('DEBUG: Final sessionId for MCPSessionManager:', sessionId)
     const mcpSession = new MCPSessionManager(MCP_BASE_URL, userId, id, sessionId)
 
-    return createDataStreamResponse({
-      execute: async (dataStream) => {
-        const system = systemPrompt({ selectedChatModel })
-        await streamText(
-          { dataStream, userMessage },
-          {
-            model: myProvider.languageModel(selectedChatModel),
-            system,
-            messages,
-            maxSteps: 20,
-            experimental_transform: smoothStream({ chunking: "word" }),
-            experimental_generateMessageId: generateUUID,
-            getTools: () => mcpSession.tools({ useCache: false }),
-            onFinish: async ({ response }) => {
-              if (userId && shouldPersistData()) {
-                try {
-                  const assistantId = getTrailingMessageId({
-                    messages: response.messages.filter(
-                      (message) => message.role === "assistant"
-                    ),
-                  })
+    const system = systemPrompt({ selectedChatModel })
+    const result = await streamText(
+      { userMessage },
+      {
+        model: myProvider.languageModel(selectedChatModel),
+        system,
+        messages,
+        maxSteps: 20,
+        experimental_generateMessageId: generateUUID,
+        getTools: () => mcpSession.tools({ useCache: false }),
+        onFinish: async ({ response }) => {
+          if (userId && shouldPersistData()) {
+            try {
+              const assistantId = getTrailingMessageId({
+                messages: response.messages.filter(
+                  (message) => message.role === "assistant"
+                ),
+              })
 
-                  if (!assistantId) {
-                    throw new Error("No assistant message found!")
-                  }
-
-                  const [, assistantMessage] = appendResponseMessages({
-                    messages: [userMessage],
-                    responseMessages: response.messages,
-                  })
-
-                  await saveMessages({
-                    messages: [
-                      {
-                        id: assistantId,
-                        chatId: id,
-                        role: assistantMessage.role,
-                        parts: assistantMessage.parts,
-                        attachments:
-                          assistantMessage.experimental_attachments ?? [],
-                        createdAt: new Date(),
-                      },
-                    ],
-                  })
-                } catch (error) {
-                  console.error("Failed to save chat")
-                }
+              if (!assistantId) {
+                throw new Error("No assistant message found!")
               }
-            },
-            experimental_telemetry: {
-              isEnabled: isProductionEnvironment,
-              functionId: "stream-text",
-            },
+
+              // Find the last assistant message in the response messages
+              const assistantMessage = response.messages.filter(
+                (message) => message.role === "assistant"
+              ).pop()
+
+              if (!assistantMessage) {
+                throw new Error("No assistant message found in response!")
+              }
+
+              await saveMessages({
+                messages: [
+                  {
+                    id: assistantId,
+                    chatId: id,
+                    role: assistantMessage.role,
+                    parts: assistantMessage.parts,
+                    attachments:
+                      assistantMessage.experimental_attachments ?? [],
+                    createdAt: new Date(),
+                  },
+                ],
+              })
+            } catch (error) {
+              console.error("Failed to save chat")
+            }
           }
-        )
+        },
+        experimental_telemetry: {
+          isEnabled: isProductionEnvironment,
+          functionId: "stream-text",
+        },
+      }
+    )
+
+    // Use custom fullStream approach for true progressive streaming
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          let closed = false
+          
+          // Handle stream closure
+          const cleanup = () => {
+            if (!closed) {
+              closed = true
+              controller.close()
+            }
+          }
+          
+          for await (const chunk of result.fullStream) {
+            if (closed) break
+            
+            console.log(`>> Streaming chunk type: ${chunk.type}`)
+            
+            try {
+              const data = `data: ${JSON.stringify(chunk)}\n\n`
+              controller.enqueue(encoder.encode(data))
+            } catch (enqueueError) {
+              console.log('>> Controller already closed, stopping stream')
+              break
+            }
+            
+            // If this is a finish chunk, prepare to close
+            if (chunk.type === 'finish') {
+              console.log('>> Stream finishing')
+              cleanup()
+              break
+            }
+          }
+          
+          cleanup()
+        } catch (error) {
+          console.error('>> Stream error:', error)
+          try {
+            controller.error(error)
+          } catch (errorError) {
+            console.log('>> Controller already closed during error handling')
+          }
+        }
       },
-      onError: (error) => {
-        console.error("Error:", error)
-        return "Oops, an error occured!"
+    })
+    
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'x-vercel-ai-ui-message-stream': 'v1',
       },
     })
   } catch (error) {

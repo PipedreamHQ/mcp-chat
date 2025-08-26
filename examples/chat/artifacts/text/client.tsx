@@ -40,7 +40,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
       });
     }
 
-    if (streamPart.type === 'text-delta') {
+    if (streamPart.type === 'text') {
       setArtifact((draftArtifact) => {
         return {
           ...draftArtifact,

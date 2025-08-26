@@ -1,7 +1,7 @@
 import type {
   CoreAssistantMessage,
   CoreToolMessage,
-  Message,
+  UIMessage,
   TextStreamPart,
   ToolInvocation,
   ToolSet,
@@ -74,8 +74,8 @@ function addToolMessageToChat({
   messages,
 }: {
   toolMessage: CoreToolMessage;
-  messages: Array<Message>;
-}): Array<Message> {
+  messages: Array<UIMessage>;
+}): Array<UIMessage> {
   return messages.map((message) => {
     if (message.toolInvocations) {
       return {

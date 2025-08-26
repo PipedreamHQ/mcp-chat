@@ -3,6 +3,7 @@
 import type { Attachment, UIMessage } from 'ai';
 import { useChat } from '@ai-sdk/react';
 import { useState } from 'react';
+import { DefaultChatTransport } from 'ai';
 import useSWR, { useSWRConfig } from 'swr';
 import { ChatHeader } from '@/components/chat-header';
 import type { Vote } from '@/lib/db/schema';
@@ -35,26 +36,23 @@ export function Chat({
   const { data: session } = useEffectiveSession();
   const isSignedIn = !!session?.user;
 
-  const {
-    messages,
-    setMessages,
-    handleSubmit,
-    input,
-    setInput,
-    append,
-    status,
-    stop,
-    reload,
-  } = useChat({
+  // v5: Manual input state management
+  const [input, setInput] = useState('');
+
+  const chatResult = useChat({
     id,
-    body: { id, selectedChatModel: selectedChatModel },
-    initialMessages,
-    experimental_throttle: 100,
-    sendExtraMessageFields: true,
+    messages: initialMessages,
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+      body: { id, selectedChatModel: selectedChatModel },
+    }),
+    throttle: 50, // Reduced throttling for better multi-step streaming
     generateId: generateUUID,
+
     onFinish: () => {
       mutate('/api/history');
     },
+
     onError: (error) => {
       // Check if error is a 401 unauthorized due to authentication
       if (error instanceof Error && error.message.includes('401')) {
@@ -62,8 +60,18 @@ export function Chat({
         return;
       }
       toast.error('An error occurred, please try again!');
-    },
+    }
   });
+
+
+  const {
+    messages,
+    setMessages,
+    sendMessage,
+    status,
+    stop,
+    reload,
+  } = chatResult;
 
   const { data: votes } = useSWR<Array<Vote>>(
     messages.length >= 2 ? `/api/vote?chatId=${id}` : null,
@@ -72,6 +80,24 @@ export function Chat({
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
+
+  // v5: Manual form submission (compatible with MultimodalInput)
+  const handleSubmit = (e?: React.FormEvent, options?: any) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
+    // Use attachments from options if provided, otherwise use local state
+    const messageAttachments = options?.experimental_attachments || attachments;
+    
+    if (input.trim()) {
+      sendMessage({
+        text: input,
+      });
+      setInput('');
+      setAttachments([]);
+    }
+  };
 
   // Show error if no API keys are configured
   if (hasAPIKeys === false) {
@@ -151,7 +177,7 @@ export function Chat({
                     setAttachments={setAttachments}
                     messages={messages}
                     setMessages={setMessages}
-                    append={append}
+                    append={sendMessage}
                   />
                 )}
               </form>
@@ -168,7 +194,7 @@ export function Chat({
                 reload={reload}
                 isReadonly={isReadonly}
                 isArtifactVisible={isArtifactVisible}
-                append={append}
+                append={sendMessage}
                 isSignedIn={false}
               />
 
@@ -186,7 +212,7 @@ export function Chat({
                     setAttachments={setAttachments}
                     messages={messages}
                     setMessages={setMessages}
-                    append={append}
+                    append={sendMessage}
                   />
                 )}
               </form>
@@ -203,7 +229,7 @@ export function Chat({
           stop={stop}
           attachments={attachments}
           setAttachments={setAttachments}
-          append={append}
+          append={sendMessage}
           messages={messages}
           setMessages={setMessages}
           reload={reload}
@@ -234,7 +260,7 @@ export function Chat({
           reload={reload}
           isReadonly={isReadonly}
           isArtifactVisible={isArtifactVisible}
-          append={append}
+          append={sendMessage}
         />
 
         <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
@@ -250,7 +276,7 @@ export function Chat({
               setAttachments={setAttachments}
               messages={messages}
               setMessages={setMessages}
-              append={append}
+              append={sendMessage}
             />
           )}
         </form>
@@ -265,7 +291,7 @@ export function Chat({
         stop={stop}
         attachments={attachments}
         setAttachments={setAttachments}
-        append={append}
+        append={sendMessage}
         messages={messages}
         setMessages={setMessages}
         reload={reload}

@@ -17,7 +17,7 @@ export const requestSuggestions = ({
 }: RequestSuggestionsProps) =>
   tool({
     description: 'Request suggestions for a document',
-    parameters: z.object({
+    inputSchema: z.object({
       documentId: z
         .string()
         .describe('The ID of the document to request edits'),
@@ -58,9 +58,13 @@ export const requestSuggestions = ({
           isResolved: false,
         };
 
-        dataStream.writeData({
-          type: 'suggestion',
-          content: suggestion,
+        dataStream.write({
+          'type': 'data',
+
+          'value': [{
+            type: 'suggestion',
+            content: suggestion,
+          }]
         });
 
         suggestions.push(suggestion);

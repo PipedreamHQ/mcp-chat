@@ -8,10 +8,11 @@ import { UseChatHelpers } from '@ai-sdk/react';
 import { SignInModal } from './sign-in-modal';
 import { useIsMobile } from '../hooks/use-mobile';
 import { Globe } from 'lucide-react';
+import { generateUUID } from '@/lib/utils';
 
 interface SuggestedActionsProps {
   chatId: string;
-  append: UseChatHelpers['append'];
+  append: UseChatHelpers['sendMessage'];
 }
 
 interface SuggestedAction {
@@ -46,8 +47,7 @@ function PureSuggestedActions({ chatId, append }: SuggestedActionsProps) {
     // User is authenticated, proceed with the action
     window.history.replaceState({}, '', `/chat/${chatId}`);
     append({
-      role: 'user',
-      content: actionText,
+      text: actionText,
     });
   };
   

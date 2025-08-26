@@ -98,7 +98,7 @@ The arguments for configuring the tool. Must match the expected arguments define
 
 export const webSearch = tool({
   description: "Search the web for up-to-date information",
-  parameters: z.object({
+  inputSchema: z.object({
     query: z.string().min(1).max(100).describe("The search query"),
   }),
   execute: async ({ query }) => {
@@ -237,12 +237,34 @@ class MCPSessionManager {
     for (const mcpTool of Object.values(mcpTools)) {
       tools[mcpTool.name] = tool({
         description: mcpTool.description || "",
-        parameters: jsonSchema(mcpTool.inputSchema),
+        inputSchema: jsonSchema(mcpTool.inputSchema),
         execute: async (args: unknown, options: ToolExecutionOptions) => {
-          return this.executeTool(mcpTool.name, args, {
+          console.log(`>> Executing MCP tool: ${mcpTool.name}`)
+          console.log(`>> Tool args:`, JSON.stringify(args, null, 2))
+          
+          const result = await this.executeTool(mcpTool.name, args, {
             timeout: 180_000, // 3 minutes
             ...options,
           })
+          
+          console.log(`>> Tool result:`, JSON.stringify(result, null, 2))
+          
+          // Try different return formats for v5 compatibility
+          if (result && result.content && Array.isArray(result.content)) {
+            const textContent = result.content
+              .filter(item => item.type === 'text')
+              .map(item => item.text)
+              .join('\n');
+            
+            if (textContent) {
+              console.log(`>> Returning extracted text:`, textContent)
+              
+              // Return just the text content for v5 compatibility
+              return textContent;
+            }
+          }
+          
+          return result
         },
       })
     }

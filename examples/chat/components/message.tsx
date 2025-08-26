@@ -88,12 +88,13 @@ const PurePreviewMessage = ({
               const { type } = part;
               const key = `message-${message.id}-part-${index}`;
 
+
               if (type === 'reasoning') {
                 return (
                   <MessageReasoning
                     key={key}
                     isLoading={isLoading}
-                    reasoning={part.reasoning}
+                    reasoning={part.reasoningText}
                   />
                 );
               }
@@ -151,13 +152,22 @@ const PurePreviewMessage = ({
                 }
               }
 
-              if (type === 'tool-invocation') {
-                const { toolInvocation } = part;
-                const { toolName, toolCallId, state, args } = toolInvocation;
+              // Handle v5 tool parts (tool-{toolName}) and v4 tool-invocation
+              if (type === 'tool-invocation' || type.startsWith('tool-')) {
+                // v5 format: extract toolName from the type
+                const toolName = type === 'tool-invocation' 
+                  ? part.toolInvocation?.toolName 
+                  : type.replace('tool-', '');
+                
+                // For v5, the data is directly on the part, not in toolInvocation
+                const toolCallId = part.toolCallId;
+                const state = part.state;
+                const args = part.args || part.input;
+                const result = part.result || part.output;
 
-                if (state === 'call') {
-                  const { args } = toolInvocation;
-
+                // v5 uses different states - handle both call states and result states
+                if (state === 'call' || !result) {
+                  // This is a tool call (no result yet)
                   return (
                     <div
                       key={toolCallId}
@@ -184,11 +194,8 @@ const PurePreviewMessage = ({
                       ) : <ToolCallRunning name={toolName} toolCallId={toolCallId} />}
                     </div>
                   );
-                }
-
-                if (state === 'result') {
-                  const { result } = toolInvocation;
-
+                } else {
+                  // This is a tool result (has result data)
                   return (
                     <div key={toolCallId}>
                       {toolName === 'getWeather' ? (

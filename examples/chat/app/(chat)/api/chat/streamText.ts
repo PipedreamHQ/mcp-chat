@@ -1,95 +1,79 @@
-import { generateUUID, getTrailingMessageId } from "@/lib/utils"
+import { generateUUID } from "@/lib/utils"
 import {
   streamText as _streamText,
-  appendResponseMessages,
-  DataStreamWriter,
   ToolSet,
   UIMessage,
-  Message,
   smoothStream,
+  convertToModelMessages,
+  stepCountIs,
 } from "ai"
 
 export const streamText = async (
   {
-    dataStream,
     userMessage,
-  }: { dataStream: DataStreamWriter; userMessage: UIMessage },
+  }: { userMessage: UIMessage },
   args: Omit<Parameters<typeof _streamText>[0], "tools"> & {
     getTools: () => Promise<ToolSet>
   }
 ) => {
   const {
     maxSteps = 1,
-    maxRetries,
     messages: _messages,
     getTools,
     ...rest
   } = args
+  
   // Convert UI messages to proper Message objects with IDs if needed
   let messages = (_messages ?? []).map((msg) =>
     "id" in msg ? msg : { ...msg, id: generateUUID() }
-  ) as Message[]
+  ) as UIMessage[]
 
-  for (let steps = 0; steps < maxSteps; steps++) {
-    const cont = await new Promise<boolean>(async (resolve, reject) => {
-      const tools = await getTools()
-      console.log(">> Using tools", Object.keys(tools).join(", "))
-      const result = _streamText({
-        ...rest,
-        messages,
-        tools,
-        experimental_transform: [
-          smoothStream({
-            chunking: /\s*\S+\s*/m,
-            delayInMs: 0
-          })
-        ],
-        onFinish: async (event) => {
-          console.log(">> Finish reason", event.finishReason)
+  const tools = await getTools()
+  console.log(">> Using tools", Object.keys(tools).join(", "))
+  console.log(">> MaxSteps configured:", maxSteps)
 
-          switch (event.finishReason) {
-            case "stop":
-            case "content-filter":
-            case "error":
-              resolve(false)
-              break
-            case "length":
-            case "tool-calls":
-            case "other":
-            case "unknown":
-            default:
-              break
-          }
+  // Go back to manual step approach for proper sequential execution and streaming
+  // This ensures tools execute sequentially and results are properly chained
+  
+  // Use v5's built-in multi-step execution with stopWhen 
+  const result = _streamText({
+    ...rest,
+    messages: convertToModelMessages(messages),
+    tools,
+    
+    // v5 pattern: stopWhen evaluated only when step contains tool results
+    stopWhen: stepCountIs(maxSteps),
+    
+    // Remove smoothStream to test if it's causing buffering in multi-step
+    // experimental_transform: [
+    //   smoothStream({
+    //     chunking: /\s*\S+\s*/m,
+    //     delayInMs: 25
+    //   })
+    // ],
+    
+    // Monitor each step
+    onStepFinish: ({ stepNumber, finishReason, toolCalls, toolResults, steps }) => {
+      console.log(`>> Step ${stepNumber} finished with reason: ${finishReason}`)
+      console.log(`>> Total steps so far: ${steps?.length || 'unknown'}`)
+      if (toolCalls?.length) {
+        console.log(`>> Made ${toolCalls.length} tool calls`)
+      }
+      if (toolResults?.length) {
+        console.log(`>> Got ${toolResults.length} tool results`)
+      }
+      console.log(`>> Should continue? stepCount=${steps?.length}, maxSteps=${maxSteps}`)
+    },
+    
+    onFinish: async (event) => {
+      console.log(">> All steps completed, final reason:", event.finishReason)
+      console.log(">> Total steps:", event.steps?.length || 0)
+      
+      // Call the original onFinish handler
+      await rest.onFinish?.(event)
+    },
+  })
 
-          const assistantId = getTrailingMessageId({
-            messages: event.response.messages.filter(
-              (message) => message.role === "assistant"
-            ),
-          })
-
-          if (!assistantId) {
-            throw new Error("No assistant message found!")
-          }
-
-          messages = appendResponseMessages({
-            messages,
-            responseMessages: event.response.messages,
-          })
-          await rest.onFinish?.(event)
-          resolve(true)
-        },
-      })
-
-      result.consumeStream()
-
-      result.mergeIntoDataStream(dataStream, {
-        sendReasoning: true,
-      })
-    })
-
-    if (!cont) {
-      console.log("Ending loop", steps)
-      break
-    }
-  }
+  // Return the result directly - this will stream properly
+  return result
 }
