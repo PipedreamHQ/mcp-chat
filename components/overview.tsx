@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 import Image from 'next/image';
 
 import { ChatBubbleIcon } from './icons';
@@ -20,43 +19,40 @@ export const Overview = () => {
     >
       <div className="flex flex-col gap-6 max-w-xl px-4">
         <div className="rounded-xl p-6 flex flex-col gap-8 leading-relaxed text-center">
-          <p className="flex flex-row justify-center gap-4 items-center">
-            <Image
-              src="/images/pipedream-icon.svg"
-              alt="Pipedream"
-              width={32}
-              height={32}
-              className="size-8 rounded-sm"
-              priority
-            />
-            <span>+</span>
-            <ChatBubbleIcon size={32} />
+          {/* Virgo logo + chat icon */}
+         <p className="flex flex-row justify-center gap-4 items-center">
+  <Image
+    src="/images/profileimg.jpg"
+    alt="Virgo Logo"
+    width={40}
+    height={40}
+    className="size-10 rounded-full border border-gray-300"
+    priority
+  />
+  <span>+</span>
+  <ChatBubbleIcon size={32} />
+</p>
+
+
+          {/* Custom Virgo copy */}
+          <p>
+            Welcome to <span className="font-semibold">Virgo Chat</span> —  
+            your gateway to connect and chat with any app.
           </p>
           <p>
-            This app uses{" "}
-            <Link
-              className="font-medium underline underline-offset-4"
-              href="https://pipedream.com/docs/connect/mcp/developers"
-              target="_blank"
-            >
-              Pipedream MCP
-            </Link>{" "}
-            to let you chat with any app.
-          </p>
-          <p>
-            With {" "}
-            <Link
-              className="font-medium underline underline-offset-4"
-              href="https://mcp.pipedream.com/"
-              target="_blank"
-            >
-              2,800+ built-in APIs
-            </Link>{" "}
-             {" "}and 10k+ tools, use Pipedream MCP to supercharge your AI app or agent.
+            Chat directly with <span className="font-semibold">2,800+ APIs</span> 
+            and 10k+ tools. Powered by <span className="font-semibold">Virgo</span>, 
+            built for speed and simplicity.
           </p>
         </div>
-        <InfoBanner isAuthDisabled={isAuthDisabled} isPersistenceDisabled={isPersistenceDisabled} />
+
+        {/* Keep the banner logic */}
+        <InfoBanner 
+          isAuthDisabled={isAuthDisabled} 
+          isPersistenceDisabled={isPersistenceDisabled} 
+        />
       </div>
     </motion.div>
   );
 };
+

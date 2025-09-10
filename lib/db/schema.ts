@@ -4,7 +4,6 @@ import {
   varchar,
   timestamp,
   json,
-  uuid,
   text,
   primaryKey,
   foreignKey,
@@ -13,19 +12,25 @@ import {
 } from "drizzle-orm/pg-core"
 import type { AdapterAccountType } from "next-auth/adapters"
 
+//
+// Users
+//
 export const user = pgTable("User", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  id: text("id").primaryKey().notNull(), // was uuid
   email: varchar("email", { length: 64 }).unique(),
   password: varchar("password", { length: 64 }),
 })
 
 export type User = InferSelectModel<typeof user>
 
+//
+// Chats
+//
 export const chat = pgTable("Chat", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  id: text("id").primaryKey().notNull(),
   createdAt: timestamp("createdAt").notNull(),
   title: text("title").notNull(),
-  userId: uuid("userId")
+  userId: text("userId")
     .notNull()
     .references(() => user.id),
   visibility: varchar("visibility", { enum: ["public", "private"] })
@@ -35,10 +40,13 @@ export const chat = pgTable("Chat", {
 
 export type Chat = InferSelectModel<typeof chat>
 
+//
+// Accounts
+//
 export const accounts = pgTable(
   "account",
   {
-    userId: uuid("userId")
+    userId: text("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     type: text("type").$type<AdapterAccountType>().notNull(),
@@ -61,11 +69,12 @@ export const accounts = pgTable(
   ]
 )
 
-// DEPRECATED: The following schema is deprecated and will be removed in the future.
-// Read the migration guide at https://github.com/vercel/ai-chatbot/blob/main/docs/04-migrate-to-parts.md
+//
+// Deprecated Messages
+//
 export const messageDeprecated = pgTable("Message", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  chatId: uuid("chatId")
+  id: text("id").primaryKey().notNull(),
+  chatId: text("chatId")
     .notNull()
     .references(() => chat.id),
   role: varchar("role").notNull(),
@@ -75,9 +84,12 @@ export const messageDeprecated = pgTable("Message", {
 
 export type MessageDeprecated = InferSelectModel<typeof messageDeprecated>
 
+//
+// Messages v2
+//
 export const message = pgTable("Message_v2", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  chatId: uuid("chatId")
+  id: text("id").primaryKey().notNull(),
+  chatId: text("chatId")
     .notNull()
     .references(() => chat.id),
   role: varchar("role").notNull(),
@@ -88,15 +100,16 @@ export const message = pgTable("Message_v2", {
 
 export type DBMessage = InferSelectModel<typeof message>
 
-// DEPRECATED: The following schema is deprecated and will be removed in the future.
-// Read the migration guide at https://github.com/vercel/ai-chatbot/blob/main/docs/04-migrate-to-parts.md
+//
+// Deprecated Votes
+//
 export const voteDeprecated = pgTable(
   "Vote",
   {
-    chatId: uuid("chatId")
+    chatId: text("chatId")
       .notNull()
       .references(() => chat.id),
-    messageId: uuid("messageId")
+    messageId: text("messageId")
       .notNull()
       .references(() => messageDeprecated.id),
     isUpvoted: boolean("isUpvoted").notNull(),
@@ -110,13 +123,16 @@ export const voteDeprecated = pgTable(
 
 export type VoteDeprecated = InferSelectModel<typeof voteDeprecated>
 
+//
+// Votes v2
+//
 export const vote = pgTable(
   "Vote_v2",
   {
-    chatId: uuid("chatId")
+    chatId: text("chatId")
       .notNull()
       .references(() => chat.id),
-    messageId: uuid("messageId")
+    messageId: text("messageId")
       .notNull()
       .references(() => message.id),
     isUpvoted: boolean("isUpvoted").notNull(),
@@ -130,17 +146,20 @@ export const vote = pgTable(
 
 export type Vote = InferSelectModel<typeof vote>
 
+//
+// Documents
+//
 export const document = pgTable(
   "Document",
   {
-    id: uuid("id").notNull().defaultRandom(),
+    id: text("id").notNull(),
     createdAt: timestamp("createdAt").notNull(),
     title: text("title").notNull(),
     content: text("content"),
     kind: varchar("text", { enum: ["text", "code", "image", "sheet"] })
       .notNull()
       .default("text"),
-    userId: uuid("userId")
+    userId: text("userId")
       .notNull()
       .references(() => user.id),
   },
@@ -153,17 +172,20 @@ export const document = pgTable(
 
 export type Document = InferSelectModel<typeof document>
 
+//
+// Suggestions
+//
 export const suggestion = pgTable(
   "Suggestion",
   {
-    id: uuid("id").notNull().defaultRandom(),
-    documentId: uuid("documentId").notNull(),
+    id: text("id").notNull(),
+    documentId: text("documentId").notNull(),
     documentCreatedAt: timestamp("documentCreatedAt").notNull(),
     originalText: text("originalText").notNull(),
     suggestedText: text("suggestedText").notNull(),
     description: text("description"),
     isResolved: boolean("isResolved").notNull().default(false),
-    userId: uuid("userId")
+    userId: text("userId")
       .notNull()
       .references(() => user.id),
     createdAt: timestamp("createdAt").notNull(),

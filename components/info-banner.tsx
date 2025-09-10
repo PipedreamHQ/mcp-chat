@@ -12,9 +12,6 @@ interface InfoBannerProps {
 
 /**
  * Custom hook for managing dismissible banner states.
- * 
- * This demonstrates a pattern for handling multiple dismissible UI elements
- * with a single, reusable state management solution.
  */
 function useDismissibleBanners() {
   const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());
@@ -32,9 +29,6 @@ function useDismissibleBanners() {
 
 /**
  * Reusable banner component for displaying dismissible messages.
- * 
- * This component demonstrates how to create themed, dismissible banners
- * with consistent styling.
  */
 function Banner({ 
   theme, 
@@ -73,15 +67,7 @@ function Banner({
 }
 
 /**
- * InfoBanner displays contextual information about the app's current configuration.
- * 
- * Shows different banners based on:
- * - Auth disabled: Warning about development mode
- * - Persistence disabled: Warning about chat storage
- * - Normal mode: Info about the MCP demo
- * 
- * This pattern allows developers to understand the current app state and
- * provides helpful links to documentation.
+ * InfoBanner for Virgo branding (replaces Pipedream copy).
  */
 export function InfoBanner({ isAuthDisabled: isAuthDisabledMode, isPersistenceDisabled = false, className = "" }: InfoBannerProps) {
   const { dismissBanner, isBannerDismissed } = useDismissibleBanners();
@@ -89,7 +75,6 @@ export function InfoBanner({ isAuthDisabled: isAuthDisabledMode, isPersistenceDi
   const showMainBanner = !isBannerDismissed('main');
   const showPersistenceWarning = isPersistenceDisabled && !isBannerDismissed('persistence');
 
-  // Don't render anything if both banners are dismissed
   if (!showMainBanner && !showPersistenceWarning) {
     return null;
   }
@@ -102,19 +87,12 @@ export function InfoBanner({ isAuthDisabled: isAuthDisabledMode, isPersistenceDi
           onDismiss={() => dismissBanner('main')}
         >
           {isAuthDisabledMode ? (
-            <span>User sign-in is currently disabled, make sure to enable before shipping to production.</span>
+            <span>
+              User sign-in is currently disabled. You can still try <strong>Virgo Chat</strong> in prototype mode.
+            </span>
           ) : (
             <span>
-              This demo app showcases how you can integrate Pipedream&apos;s MCP server into your AI app.{' '}
-              <a 
-                href="https://pipedream.com/docs/connect/mcp/developers" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 hover:underline hover:text-blue-600 dark:hover:text-blue-400 font-semibold"
-              >
-                Check out our docs
-              </a>
-              {' '} to get started.
+              Welcome to <strong>Virgo Chat</strong> — chat directly with 2,800+ APIs in one place.
             </span>
           )}
         </Banner>

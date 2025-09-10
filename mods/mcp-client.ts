@@ -125,14 +125,21 @@ class MCPSessionManager {
   private chatId: string
   private userId: string
 
-  constructor(mcpBaseUrl: string, userId: string, chatId: string, sessionId: string | undefined) {
-    console.log(`Using ${mcpBaseUrl} as the MCP Server.`)
-    this.serverUrl = `${mcpBaseUrl}/v1/${userId}`
-    this.sessionId = sessionId
-    this.chatId = chatId
-    this.userId = userId
-    console.log(`Creating MCP Session: ${this.serverUrl} chatId=${this.chatId} sessionId=${this.sessionId}`)
-  }
+  constructor(mcpBaseUrl: string, userId: string | undefined, chatId: string, sessionId: string | undefined) {
+  console.log(`Using ${mcpBaseUrl} as the MCP Server.`)
+
+  // Default to "virgo" if no user ID is provided (prototype mode)
+  this.userId = userId || "virgo"
+
+  this.serverUrl = `${mcpBaseUrl}/v1/${this.userId}`
+  this.sessionId = sessionId
+  this.chatId = chatId
+
+  console.log(
+    `Creating MCP Session: ${this.serverUrl} chatId=${this.chatId} sessionId=${this.sessionId}`
+  )
+}
+
 
   /**
    * Connects to the MCP SSE endpoint and initializes the session
