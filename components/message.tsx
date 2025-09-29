@@ -1,6 +1,6 @@
 'use client';
 
-import type { UIMessage, TextUIPart } from 'ai';
+import type { UIMessage, } from 'ai';
 import cx from 'classnames';
 import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useState } from 'react';
@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
-import { UseChatHelpers } from '@ai-sdk/react';
+import type { UseChatHelpers } from '@ai-sdk/react';
 import { ToolCallRunning } from './tool-call-running';
 import { ToolCallResult } from './tool-call-result';
 

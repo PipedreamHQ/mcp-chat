@@ -2,10 +2,10 @@ import { generateUUID, getTrailingMessageId } from "@/lib/utils"
 import {
   streamText as _streamText,
   appendResponseMessages,
-  DataStreamWriter,
-  ToolSet,
-  UIMessage,
-  Message,
+  type DataStreamWriter,
+  type ToolSet,
+  type UIMessage,
+  type Message,
   smoothStream,
 } from "ai"
 

@@ -1,7 +1,7 @@
-import { auth } from "@/app/(auth)/auth"
+
 import { systemPrompt } from "@/lib/ai/prompts"
 import { myProvider } from "@/lib/ai/providers"
-import { isProductionEnvironment, isAuthDisabled } from "@/lib/constants"
+import { isProductionEnvironment, } from "@/lib/constants"
 import {
   deleteChatById,
   getChatById,
@@ -16,7 +16,7 @@ import {
 import { getEffectiveSession, shouldPersistData } from "@/lib/auth-utils"
 import { MCPSessionManager } from "@/mods/mcp-client"
 import {
-  UIMessage,
+  type UIMessage,
   appendResponseMessages,
   createDataStreamResponse,
   smoothStream,
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
       console.log('DEBUG: Looking for body.mcpSessions[id]:', body.mcpSessions ? body.mcpSessions[id] : 'mcpSessions not found')
       
       // Try both formats to see which one works
-      if (body.mcpSessions && body.mcpSessions[id]) {
+      if (body.mcpSessions?.[id]) {
         sessionId = body.mcpSessions[id]
         console.log('DEBUG: Found sessionId in body.mcpSessions[id]:', sessionId)
       } else if (body[id]) {

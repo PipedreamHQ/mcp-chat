@@ -1,6 +1,6 @@
 'use client';
 
-import { deleteConnectedAccount } from '@/app/(chat)/accounts/actions';
+import { deleteConnectedAccount, deleteUserAccount } from '@/app/(chat)/accounts/actions';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import Image from 'next/image';
@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { type Account } from '@pipedream/sdk/browser';
+import type { Account } from '@pipedream/sdk/browser';
 
 interface ConnectedAccountsProps {
   accounts: Account[];
@@ -27,6 +27,8 @@ export function ConnectedAccounts({ accounts }: ConnectedAccountsProps) {
   const router = useRouter();
   const [accountToDelete, setAccountToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isDeletingUserAccount, setIsDeletingUserAccount] = useState(false);
+  const [showDeleteUserDialog, setShowDeleteUserDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleDelete = async () => {
@@ -44,6 +46,25 @@ export function ConnectedAccounts({ accounts }: ConnectedAccountsProps) {
     }
   };
 
+  const handleDeleteUserAccount = async () => {
+    try {
+      setIsDeletingUserAccount(true);
+      await deleteUserAccount();
+      // If we reach here without an error, the deletion was successful and user will be redirected
+    } catch (error) {
+      console.error('Delete account error:', error);
+      // Check if this is actually a redirect error (which means success)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('NEXT_REDIRECT')) {
+        // This is expected - the user is being redirected after successful deletion
+        return;
+      }
+      setError('Failed to delete account. Please try again later.');
+      setIsDeletingUserAccount(false);
+      setShowDeleteUserDialog(false);
+    }
+  };
+
   if (error) {
     return (
       <div className="rounded-md border p-4 bg-background max-w-3xl">
@@ -53,17 +74,10 @@ export function ConnectedAccounts({ accounts }: ConnectedAccountsProps) {
     );
   }
 
-  if (!accounts || accounts.length === 0) {
-    return (
-      <div className="rounded-md border p-4 bg-background max-w-3xl">
-        <h3 className="text-lg font-medium mb-2">No connected accounts yet</h3>
-        <p className='py-4'>Your connected accounts will be listed here after you connect them, you can delete them at any time.</p>
-      </div>
-    );
-  }
+  const hasAccounts = accounts && accounts.length > 0;
 
   // Sort accounts alphabetically by app name then by account name
-  const sortedAccounts = [...accounts].sort((a: Account, b: Account) => {
+  const sortedAccounts = hasAccounts ? [...accounts].sort((a: Account, b: Account) => {
     // First sort by app name
     const appNameComparison = (a.app?.name || '').localeCompare(b.app?.name || '');
     if (appNameComparison !== 0) {
@@ -71,13 +85,19 @@ export function ConnectedAccounts({ accounts }: ConnectedAccountsProps) {
     }
     // If app names are the same, sort by account name
     return (a.name || '').localeCompare(b.name || '');
-  });
+  }) : [];
 
   return (
     <>
       <h3 className="text-lg font-medium mb-4">Manage your connected accounts</h3>
-      <div className="grid gap-3 max-w-3xl">
-        {sortedAccounts.map((account) => (
+      
+      {!hasAccounts ? (
+        <div className="rounded-md border p-4 bg-background max-w-3xl">
+          <p className='py-4'>Your connected accounts will be listed here after you connect them, you can delete them at any time.</p>
+        </div>
+      ) : (
+        <div className="grid gap-3 max-w-3xl">
+          {sortedAccounts.map((account) => (
           <div
             key={account.id}
             className="flex flex-col p-3 rounded-md border"
@@ -122,7 +142,7 @@ export function ConnectedAccounts({ accounts }: ConnectedAccountsProps) {
                 variant="ghost"
                 size="sm"
                 className="size-8 p-0 rounded-full"
-                onClick={() => setAccountToDelete(account.id)}
+                onClick={() => setAccountToDelete(account.id ?? null)}
                 aria-label="Delete account"
               >
                 <Trash2 className="size-6 text-destructive dark:text-red-400 dark:hover:text-red-300" />
@@ -131,6 +151,24 @@ export function ConnectedAccounts({ accounts }: ConnectedAccountsProps) {
             </div>
           </div>
         ))}
+        </div>
+      )}
+
+      {/* Delete Account Section */}
+      <div className="mt-12 pt-8 border-t border-border max-w-3xl">
+        <h3 className="text-lg font-semibold text-destructive mb-4">Danger zone</h3>
+        <p className="text-muted-foreground mb-6">
+          Delete your account and all your data including chat conversations and connected accounts. This action cannot be undone.
+        </p>
+        
+        <Button 
+          variant="destructive" 
+          disabled={isDeletingUserAccount}
+          onClick={() => setShowDeleteUserDialog(true)}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          {isDeletingUserAccount ? "Deleting account..." : "Delete account"}
+        </Button>
       </div>
 
       <AlertDialog open={!!accountToDelete} onOpenChange={(open) => !open && setAccountToDelete(null)}>
@@ -149,6 +187,28 @@ export function ConnectedAccounts({ accounts }: ConnectedAccountsProps) {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteUserDialog} onOpenChange={(open) => !open && setShowDeleteUserDialog(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete your account and all your data including chats, messages, and connected accounts. 
+              You will be signed out and will no longer be able to access your data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingUserAccount}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteUserAccount}
+              disabled={isDeletingUserAccount}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingUserAccount ? "Deleting..." : "Delete account"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

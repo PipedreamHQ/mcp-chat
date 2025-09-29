@@ -1,7 +1,7 @@
 import { getConnectedAccountById } from '@/app/(chat)/accounts/actions';
 import { useEffectiveSession } from '@/hooks/use-effective-session';
 import { prettifyToolName } from "@/lib/utils";
-import { UseChatHelpers } from '@ai-sdk/react';
+import type { UseChatHelpers } from '@ai-sdk/react';
 import { createFrontendClient, type Account, type ConnectResult } from "@pipedream/sdk/browser";
 import { Check, ChevronRight, Globe, Lock } from "lucide-react";
 import Image from 'next/image';
@@ -41,7 +41,7 @@ export const ToolCallResult = ({
     return (first === '{' && last === '}') || (first === '[' && last === ']');
   };
 
-  const deepParseJson = (value: any, depth: number = 0): any => {
+  const deepParseJson = (value: any, depth = 0): any => {
     if (depth > 6) return value;
     if (typeof value === 'string' && looksLikeJsonString(value)) {
       try {
@@ -85,7 +85,7 @@ export const ToolCallResult = ({
       if (entity[0] === '#') {
         try {
           const isHex = entity[1]?.toLowerCase() === 'x';
-          const codePoint = isHex ? parseInt(entity.slice(2), 16) : parseInt(entity.slice(1), 10);
+          const codePoint = isHex ? Number.parseInt(entity.slice(2), 16) : Number.parseInt(entity.slice(1), 10);
           if (!Number.isNaN(codePoint)) {
             return String.fromCodePoint(codePoint);
           }
@@ -98,7 +98,7 @@ export const ToolCallResult = ({
     });
   };
 
-  const deepDecodeHtmlEntities = (value: any, depth: number = 0): any => {
+  const deepDecodeHtmlEntities = (value: any, depth = 0): any => {
     if (depth > 6) return value;
     if (typeof value === 'string') {
       return decodeHtmlEntities(value);
@@ -143,7 +143,7 @@ export const ToolCallResult = ({
     return collapsed.join('\n');
   };
 
-  const deepNormalizeWhitespace = (value: any, depth: number = 0): any => {
+  const deepNormalizeWhitespace = (value: any, depth = 0): any => {
     if (depth > 6) return value;
     if (typeof value === 'string') return normalizeStringWhitespace(value);
     if (Array.isArray(value)) return value.map((v) => deepNormalizeWhitespace(v, depth + 1));

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 import { memo, useState } from 'react';
 import { useEffectiveSession } from '@/hooks/use-effective-session';
-import { UseChatHelpers } from '@ai-sdk/react';
+import type { UseChatHelpers } from '@ai-sdk/react';
 import { SignInModal } from './sign-in-modal';
 import { useIsMobile } from '../hooks/use-mobile';
 import { Globe } from 'lucide-react';
@@ -117,7 +117,7 @@ function PureSuggestedActions({ chatId, append }: SuggestedActionsProps) {
                     </div>
                   )}
                   {/* Add app icons (limit to 2) */}
-                  {suggestedAction.appSlugs && suggestedAction.appSlugs.slice(0, suggestedAction.webSearchIcon ? 2 : 3).map((slug) => (
+                  {suggestedAction.appSlugs?.slice(0, suggestedAction.webSearchIcon ? 2 : 3).map((slug) => (
                     <div 
                       key={`app-icon-${slug}`} 
                       className="size-5 rounded-sm overflow-hidden flex items-center justify-center"

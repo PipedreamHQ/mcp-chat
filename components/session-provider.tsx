@@ -3,7 +3,7 @@
 import { SessionProvider as NextAuthSessionProvider } from 'next-auth/react';
 import { createContext, useContext } from 'react';
 import { SESSION_DURATION_MS } from '@/lib/constants';
-import { GuestSession } from '@/types/user';
+import type { GuestSession } from '@/types/user';
 
 type AuthContextType = {
   isAuthDisabled: boolean;

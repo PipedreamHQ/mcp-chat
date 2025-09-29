@@ -1,15 +1,13 @@
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-
-import { auth } from '@/app/(auth)/auth';
 import { Chat } from '@/components/chat';
 import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
 import { DataStreamHandler } from '@/components/data-stream-handler';
 import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
-import { DBMessage } from '@/lib/db/schema';
-import { Attachment, UIMessage } from 'ai';
-import { BASE_METADATA, BASE_TITLE, isAuthDisabled } from '@/lib/constants';
+import type { DBMessage } from '@/lib/db/schema';
+import type { Attachment, UIMessage } from 'ai';
+import { BASE_METADATA, BASE_TITLE, } from '@/lib/constants';
 import { getEffectiveSession, shouldPersistData } from '@/lib/auth-utils';
 import { hasValidAPIKeys } from '@/lib/ai/api-keys';
 
@@ -39,7 +37,7 @@ export async function generateMetadata(
   
   // Trim description if too long
   const trimmedDescription = description.length > 160 
-    ? description.substring(0, 157) + '...' 
+    ? `${description.substring(0, 157)}...` 
     : description;
   
   const title = `${BASE_TITLE}`;

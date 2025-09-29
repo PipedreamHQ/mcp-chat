@@ -16,7 +16,7 @@ import {
   vote,
   type DBMessage,
 } from './schema';
-import { ArtifactKind } from '@/components/artifact';
+import type { ArtifactKind } from '@/components/artifact';
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -346,6 +346,38 @@ export async function updateChatVisiblityById({
     return await db.update(chat).set({ visibility }).where(eq(chat.id, chatId));
   } catch (error) {
     console.error('Failed to update chat visibility in database');
+    throw error;
+  }
+}
+
+export async function deleteUserById({ id }: { id: string }) {
+  try {
+    // Delete in order to respect foreign key constraints
+    // Get all chats for this user first
+    const userChats = await db.select({ id: chat.id }).from(chat).where(eq(chat.userId, id));
+    const chatIds = userChats.map(c => c.id);
+    
+    if (chatIds.length > 0) {
+      // Vote_v2 references Message_v2, and messages belong to chats
+      await db.delete(vote).where(inArray(vote.chatId, chatIds));
+      
+      // Message_v2 references Chat
+      await db.delete(message).where(inArray(message.chatId, chatIds));
+    }
+    
+    // Suggestion references Document
+    await db.delete(suggestion).where(eq(suggestion.userId, id));
+    
+    // Document references User
+    await db.delete(document).where(eq(document.userId, id));
+    
+    // Chat references User
+    await db.delete(chat).where(eq(chat.userId, id));
+    
+    // User table (account table will cascade delete automatically)
+    return await db.delete(user).where(eq(user.id, id));
+  } catch (error) {
+    console.error('Failed to delete user by id from database');
     throw error;
   }
 }

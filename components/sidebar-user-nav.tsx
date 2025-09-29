@@ -50,7 +50,7 @@ export function SidebarUserNav({ user }: { user: User }) {
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <a href="/accounts" className="w-full cursor-pointer">
-                Connected accounts
+                Account
               </a>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

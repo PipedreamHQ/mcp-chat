@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { Client as MCPClient } from "@modelcontextprotocol/sdk/client/index.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
-import { jsonSchema, Schema, tool, ToolSet } from "ai"
+import { jsonSchema, type Schema, tool, type ToolSet } from "ai"
 import Exa from "exa-js"
 import { pdHeaders } from "../lib/pd-backend-client"
 
@@ -247,7 +247,7 @@ class MCPSessionManager {
       })
     }
 
-    tools["Web_Search"] = webSearch
+    tools.Web_Search = webSearch
 
     console.log("Tools:\n", Object.keys(tools).join(",\n"), "\n\n")
 

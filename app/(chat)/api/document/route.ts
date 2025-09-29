@@ -1,5 +1,5 @@
 import { getEffectiveSession } from '@/lib/auth-utils';
-import { ArtifactKind } from '@/components/artifact';
+import type { ArtifactKind } from '@/components/artifact';
 import {
   deleteDocumentsByIdAfterTimestamp,
   getDocumentsById,

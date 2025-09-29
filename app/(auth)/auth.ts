@@ -1,10 +1,9 @@
-import { compare } from 'bcrypt-ts';
+
 import NextAuth, { type User, type Session } from 'next-auth';
-import Credentials from 'next-auth/providers/credentials';
 import GoogleProvider from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter"
 
-import { db, getUser } from '@/lib/db/queries';
+import { db, } from '@/lib/db/queries';
 
 import { authConfig } from './auth.config';
 import { accounts, user } from '@/lib/db/schema';

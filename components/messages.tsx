@@ -1,11 +1,11 @@
-import { UIMessage } from 'ai';
+import type { UIMessage } from 'ai';
 import { PreviewMessage, ThinkingMessage } from './message';
 import { useScrollToBottom } from './use-scroll-to-bottom';
 import { Overview } from './overview';
 import { memo } from 'react';
-import { Vote } from '@/lib/db/schema';
+import type { Vote } from '@/lib/db/schema';
 import equal from 'fast-deep-equal';
-import { UseChatHelpers } from '@ai-sdk/react';
+import type { UseChatHelpers } from '@ai-sdk/react';
 
 interface MessagesProps {
   chatId: string;

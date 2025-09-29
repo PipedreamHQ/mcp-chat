@@ -1,5 +1,5 @@
 import { pdClient } from "@/lib/pd-backend-client"
-import { NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams

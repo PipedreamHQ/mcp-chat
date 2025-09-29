@@ -25,7 +25,7 @@ import { Textarea } from './ui/textarea';
 import { SuggestedActions } from './suggested-actions';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import equal from 'fast-deep-equal';
-import { UseChatHelpers } from '@ai-sdk/react';
+import type { UseChatHelpers } from '@ai-sdk/react';
 import { AppSelector, type App } from './app-selector';
 import { Hammer } from 'lucide-react';
 

@@ -12,7 +12,7 @@ import { memo } from "react"
 import { PlusIcon } from "./icons"
 import { useSidebar } from "./ui/sidebar"
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip"
-import { VisibilitySelector, VisibilityType } from "./visibility-selector"
+import { VisibilitySelector, type VisibilityType } from "./visibility-selector"
 
 function PureChatHeader({
   chatId,
@@ -63,7 +63,7 @@ function PureChatHeader({
       )}
 
       {/* Spacer to push new chat button to the right on mobile */}
-      <div className="flex-1 md:hidden"></div>
+      <div className="flex-1 md:hidden" />
 
       {/* Mobile new chat button - positioned on the right with full text */}
       <div className="mt-1 md:hidden ml-auto">
@@ -128,7 +128,7 @@ function PureChatHeader({
       )}
 
       {/* Spacer to push buttons to the right on desktop */}
-      <div className="flex-1 hidden md:block"></div>
+      <div className="flex-1 hidden md:block" />
 
       <div className="mt-1 hidden md:flex gap-2 ml-auto">
         <GitHubButton style="secondary" />

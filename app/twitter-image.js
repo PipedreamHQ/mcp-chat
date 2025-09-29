@@ -1,5 +1,5 @@
-import { join } from 'path';
-import { readFileSync } from 'fs';
+import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 
 // This is a special file that Next.js uses to generate the Twitter card image
 export const size = {

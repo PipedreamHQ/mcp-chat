@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/use-debounce';
-import { type App, type ListAppsResponse } from '@pipedream/sdk/browser';
+import type { App, ListAppsResponse } from '@pipedream/sdk/browser';
 import { Loader2, Search, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -301,7 +301,7 @@ export function AppSelector({
         </div>
 
         <div className="py-3 border-t mt-1 flex flex-col sm:flex-row justify-between items-center px-6 gap-3">
-          <div className="hidden sm:block w-28"></div> {/* Empty space to balance layout on larger screens */}
+          <div className="hidden sm:block w-28" /> {/* Empty space to balance layout on larger screens */}
 
           {page < totalPages ? (
             <Button
@@ -355,7 +355,7 @@ export function AppSelector({
               ) : 'Load more'}
             </Button>
           ) : (
-            <div className="sm:block hidden order-2"></div> /* Empty div when no more pages (hidden on mobile) */
+            <div className="sm:block hidden order-2" /> /* Empty div when no more pages (hidden on mobile) */
           )}
 
           <span className="text-sm text-muted-foreground font-medium text-center whitespace-nowrap w-28 order-2 sm:order-3">
