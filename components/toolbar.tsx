@@ -1,6 +1,6 @@
 'use client';
 
-import type { Message } from 'ai';
+import type { ChatStatus } from 'ai';
 import cx from 'classnames';
 import {
   AnimatePresence,
@@ -29,7 +29,7 @@ import {
 import { ArrowUpIcon, StopIcon, SummarizeIcon } from './icons';
 import { artifactDefinitions, ArtifactKind } from './artifact';
 import { ArtifactToolbarItem } from './create-artifact';
-import { UseChatHelpers } from '@ai-sdk/react';
+import type { AppendFn, ClientUIMessage } from '@/lib/chat-types';
 
 type ToolProps = {
   description: string;
@@ -39,11 +39,11 @@ type ToolProps = {
   isToolbarVisible?: boolean;
   setIsToolbarVisible?: Dispatch<SetStateAction<boolean>>;
   isAnimating: boolean;
-  append: UseChatHelpers['append'];
+  append: AppendFn;
   onClick: ({
     appendMessage,
   }: {
-    appendMessage: UseChatHelpers['append'];
+    appendMessage: AppendFn;
   }) => void;
 };
 
@@ -140,7 +140,7 @@ const ReadingLevelSelector = ({
 }: {
   setSelectedTool: Dispatch<SetStateAction<string | null>>;
   isAnimating: boolean;
-  append: UseChatHelpers['append'];
+  append: AppendFn;
 }) => {
   const LEVELS = [
     'Elementary',
@@ -251,7 +251,7 @@ export const Tools = ({
   isToolbarVisible: boolean;
   selectedTool: string | null;
   setSelectedTool: Dispatch<SetStateAction<string | null>>;
-  append: UseChatHelpers['append'];
+  append: AppendFn;
   isAnimating: boolean;
   setIsToolbarVisible: Dispatch<SetStateAction<boolean>>;
   tools: Array<ArtifactToolbarItem>;
@@ -307,10 +307,14 @@ const PureToolbar = ({
 }: {
   isToolbarVisible: boolean;
   setIsToolbarVisible: Dispatch<SetStateAction<boolean>>;
-  status: UseChatHelpers['status'];
-  append: UseChatHelpers['append'];
-  stop: UseChatHelpers['stop'];
-  setMessages: UseChatHelpers['setMessages'];
+  status: ChatStatus;
+  append: AppendFn;
+  stop: () => void;
+  setMessages: (
+    messages:
+      | ClientUIMessage[]
+      | ((messages: ClientUIMessage[]) => ClientUIMessage[]),
+  ) => void;
   artifactKind: ArtifactKind;
 }) => {
   const toolbarRef = useRef<HTMLDivElement>(null);

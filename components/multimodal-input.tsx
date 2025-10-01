@@ -1,6 +1,6 @@
 'use client';
 
-import type { Attachment, UIMessage } from 'ai';
+import type { ChatStatus } from 'ai';
 import cx from 'classnames';
 import type React from 'react';
 import {
@@ -25,9 +25,9 @@ import { Textarea } from './ui/textarea';
 import { SuggestedActions } from './suggested-actions';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import equal from 'fast-deep-equal';
-import { UseChatHelpers } from '@ai-sdk/react';
 import { AppSelector, type App } from './app-selector';
 import { Hammer } from 'lucide-react';
+import type { AppendFn, ClientUIMessage, ChatAttachment } from '@/lib/chat-types';
 
 function PureMultimodalInput({
   chatId,
@@ -44,16 +44,23 @@ function PureMultimodalInput({
   className,
 }: {
   chatId: string;
-  input: UseChatHelpers['input'];
-  setInput: UseChatHelpers['setInput'];
-  status: UseChatHelpers['status'];
+  input: string;
+  setInput: React.Dispatch<React.SetStateAction<string>>;
+  status: ChatStatus;
   stop: () => void;
-  attachments: Array<Attachment>;
-  setAttachments: Dispatch<SetStateAction<Array<Attachment>>>;
-  messages: Array<UIMessage>;
-  setMessages: UseChatHelpers['setMessages'];
-  append: UseChatHelpers['append'];
-  handleSubmit: UseChatHelpers['handleSubmit'];
+  attachments: Array<ChatAttachment>;
+  setAttachments: Dispatch<SetStateAction<Array<ChatAttachment>>>;
+  messages: Array<ClientUIMessage>;
+  setMessages: (
+    messages:
+      | ClientUIMessage[]
+      | ((messages: ClientUIMessage[]) => ClientUIMessage[]),
+  ) => void;
+  append: AppendFn;
+  handleSubmit: (
+    event?: { preventDefault?: () => void },
+    options?: { experimental_attachments?: ChatAttachment[] },
+  ) => Promise<void>;
   className?: string;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -341,10 +348,10 @@ export const MultimodalInput = memo(
 function PureAttachmentsButton({
   fileInputRef,
   status,
-  setSignInModalOpen
+  setSignInModalOpen,
 }: {
   fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
-  status: UseChatHelpers['status'];
+  status: ChatStatus;
   setSignInModalOpen: (isOpen: boolean) => void;
 }) {
   const { status: authStatus } = useEffectiveSession();
@@ -374,9 +381,9 @@ const AttachmentsButton = memo(PureAttachmentsButton);
 
 function PureAppsButton({
   status,
-  setAppSelectorOpen
+  setAppSelectorOpen,
 }: {
-  status: UseChatHelpers['status'];
+  status: ChatStatus;
   setAppSelectorOpen: (isOpen: boolean) => void;
 }) {
   return (
@@ -412,7 +419,11 @@ function PureStopButton({
   setMessages,
 }: {
   stop: () => void;
-  setMessages: UseChatHelpers['setMessages'];
+  setMessages: (
+    messages:
+      | ClientUIMessage[]
+      | ((messages: ClientUIMessage[]) => ClientUIMessage[]),
+  ) => void;
 }) {
   return (
     <Button

@@ -1,22 +1,26 @@
-import { UIMessage } from 'ai';
+import type { ChatStatus } from 'ai';
 import { PreviewMessage, ThinkingMessage } from './message';
 import { useScrollToBottom } from './use-scroll-to-bottom';
 import { Overview } from './overview';
 import { memo } from 'react';
 import { Vote } from '@/lib/db/schema';
 import equal from 'fast-deep-equal';
-import { UseChatHelpers } from '@ai-sdk/react';
+import type { AppendFn, ClientUIMessage, ReloadFn } from '@/lib/chat-types';
 
 interface MessagesProps {
   chatId: string;
-  status: UseChatHelpers['status'];
+  status: ChatStatus;
   votes: Array<Vote> | undefined;
-  messages: Array<UIMessage>;
-  setMessages: UseChatHelpers['setMessages'];
-  reload: UseChatHelpers['reload'];
+  messages: Array<ClientUIMessage>;
+  setMessages: (
+    messages:
+      | ClientUIMessage[]
+      | ((messages: ClientUIMessage[]) => ClientUIMessage[]),
+  ) => void;
+  reload: ReloadFn;
   isReadonly: boolean;
   isArtifactVisible: boolean;
-  append: UseChatHelpers['append'];
+  append: AppendFn;
   isSignedIn?: boolean;
 }
 

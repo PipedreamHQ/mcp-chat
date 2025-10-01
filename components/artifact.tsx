@@ -1,4 +1,4 @@
-import type { Attachment, UIMessage } from 'ai';
+import type { ChatStatus } from 'ai';
 import { formatDistance } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -26,7 +26,7 @@ import { codeArtifact } from '@/artifacts/code/client';
 import { sheetArtifact } from '@/artifacts/sheet/client';
 import { textArtifact } from '@/artifacts/text/client';
 import equal from 'fast-deep-equal';
-import { UseChatHelpers } from '@ai-sdk/react';
+import type { AppendFn, ClientUIMessage, ReloadFn, ChatAttachment } from '@/lib/chat-types';
 
 export const artifactDefinitions = [
   textArtifact,
@@ -69,17 +69,24 @@ function PureArtifact({
 }: {
   chatId: string;
   input: string;
-  setInput: UseChatHelpers['setInput'];
-  status: UseChatHelpers['status'];
-  stop: UseChatHelpers['stop'];
-  attachments: Array<Attachment>;
-  setAttachments: Dispatch<SetStateAction<Array<Attachment>>>;
-  messages: Array<UIMessage>;
-  setMessages: UseChatHelpers['setMessages'];
+  setInput: React.Dispatch<React.SetStateAction<string>>;
+  status: ChatStatus;
+  stop: () => void;
+  attachments: Array<ChatAttachment>;
+  setAttachments: Dispatch<SetStateAction<Array<ChatAttachment>>>;
+  messages: Array<ClientUIMessage>;
+  setMessages: (
+    messages:
+      | ClientUIMessage[]
+      | ((messages: ClientUIMessage[]) => ClientUIMessage[]),
+  ) => void;
   votes: Array<Vote> | undefined;
-  append: UseChatHelpers['append'];
-  handleSubmit: UseChatHelpers['handleSubmit'];
-  reload: UseChatHelpers['reload'];
+  append: AppendFn;
+  handleSubmit: (
+    event?: { preventDefault?: () => void },
+    options?: { experimental_attachments?: ChatAttachment[] },
+  ) => Promise<void>;
+  reload: ReloadFn;
   isReadonly: boolean;
 }) {
   const { artifact, setArtifact, metadata, setMetadata } = useArtifact();
@@ -319,6 +326,7 @@ function PureArtifact({
                   reload={reload}
                   isReadonly={isReadonly}
                   artifactStatus={artifact.status}
+                  append={append}
                 />
 
                 <form className="flex flex-row gap-2 relative items-end w-full px-4 pb-4">

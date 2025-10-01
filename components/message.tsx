@@ -1,6 +1,6 @@
 'use client';
 
-import type { UIMessage, TextUIPart } from 'ai';
+import type { TextUIPart } from 'ai';
 import cx from 'classnames';
 import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useState } from 'react';
@@ -17,9 +17,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
-import { UseChatHelpers } from '@ai-sdk/react';
 import { ToolCallRunning } from './tool-call-running';
 import { ToolCallResult } from './tool-call-result';
+import type { AppendFn, ClientUIMessage, ReloadFn } from '@/lib/chat-types';
 
 const PurePreviewMessage = ({
   chatId,
@@ -32,13 +32,17 @@ const PurePreviewMessage = ({
   append,
 }: {
   chatId: string;
-  message: UIMessage;
+  message: ClientUIMessage;
   vote: Vote | undefined;
   isLoading: boolean;
-  setMessages: UseChatHelpers['setMessages'];
-  reload: UseChatHelpers['reload'];
+  setMessages: (
+    messages:
+      | ClientUIMessage[]
+      | ((messages: ClientUIMessage[]) => ClientUIMessage[]),
+  ) => void;
+  reload: ReloadFn;
   isReadonly: boolean;
-  append: UseChatHelpers['append'];
+  append: AppendFn;
 }) => {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
@@ -92,7 +96,7 @@ const PurePreviewMessage = ({
                   <MessageReasoning
                     key={key}
                     isLoading={isLoading}
-                    reasoning={part.reasoning}
+                    reasoning={part.text}
                   />
                 );
               }
@@ -150,12 +154,15 @@ const PurePreviewMessage = ({
                 }
               }
 
-              if (type === 'tool-invocation') {
-                const { toolInvocation } = part;
-                const { toolName, toolCallId, state, args } = toolInvocation;
+              // Handle tool calls (v5 format: type is 'tool-*' or 'dynamic-tool')
+              if (type.startsWith('tool-') || type === 'dynamic-tool') {
+                const toolPart = part as any;
+                const toolCallId = toolPart.toolCallId;
+                const state = toolPart.state;
+                const toolName = type === 'dynamic-tool' ? toolPart.toolName : type.replace('tool-', '');
 
-                if (state === 'call') {
-                  const { args } = toolInvocation;
+                if (state === 'input-available' || state === 'input-streaming') {
+                  const args = toolPart.input;
 
                   return (
                     <div
@@ -185,8 +192,9 @@ const PurePreviewMessage = ({
                   );
                 }
 
-                if (state === 'result') {
-                  const { result } = toolInvocation;
+                if (state === 'output-available') {
+                  const result = toolPart.output;
+                  const args = toolPart.input;
 
                   return (
                     <div key={toolCallId}>

@@ -8,6 +8,8 @@ import { type App, type ListAppsResponse } from '@pipedream/sdk/browser';
 import { Loader2, Search, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
+export type { App };
+
 interface AppSelectorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -104,7 +106,7 @@ export function AppSelector({
       }
 
       setApps(res.data)
-      setTotal(res.response?.pageInfo?.totalCount || res.data.length)
+      setTotal(res.pageInfo?.totalCount || res.data.length)
       setPage(1)
     } catch (error) {
       setError(
@@ -142,7 +144,7 @@ export function AppSelector({
       try {
         const res = await fetchApps(debouncedSearch, nextPage, pageSize);
 
-        const totalCount = res?.response?.pageInfo?.totalCount || res?.data?.length || 0;
+        const totalCount = res?.pageInfo?.totalCount || res?.data?.length || 0;
 
         if (res?.data && Array.isArray(res.data)) {
           // Deduplicate apps based on app.id

@@ -1,8 +1,8 @@
-import type { Message } from 'ai';
 import { useSWRConfig } from 'swr';
 import { useCopyToClipboard } from 'usehooks-ts';
 
 import type { Vote } from '@/lib/db/schema';
+import type { ClientUIMessage } from '@/lib/chat-types';
 
 import { CopyIcon, ThumbDownIcon, ThumbUpIcon } from './icons';
 import { Button } from './ui/button';
@@ -23,7 +23,7 @@ export function PureMessageActions({
   isLoading,
 }: {
   chatId: string;
-  message: Message;
+  message: ClientUIMessage;
   vote: Vote | undefined;
   isLoading: boolean;
 }) {

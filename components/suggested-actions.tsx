@@ -4,14 +4,14 @@ import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 import { memo, useState } from 'react';
 import { useEffectiveSession } from '@/hooks/use-effective-session';
-import { UseChatHelpers } from '@ai-sdk/react';
 import { SignInModal } from './sign-in-modal';
 import { useIsMobile } from '../hooks/use-mobile';
 import { Globe } from 'lucide-react';
+import type { AppendFn } from '@/lib/chat-types';
 
 interface SuggestedActionsProps {
   chatId: string;
-  append: UseChatHelpers['append'];
+  append: AppendFn;
 }
 
 interface SuggestedAction {

@@ -98,7 +98,7 @@ The arguments for configuring the tool. Must match the expected arguments define
 
 export const webSearch = tool({
   description: "Search the web for up-to-date information",
-  parameters: z.object({
+  inputSchema: z.object({
     query: z.string().min(1).max(100).describe("The search query"),
   }),
   execute: async ({ query }) => {
@@ -124,6 +124,7 @@ class MCPSessionManager {
   private sessionId: string | undefined
   private chatId: string
   private userId: string
+  private keepalive: NodeJS.Timeout | null = null
 
   constructor(mcpBaseUrl: string, userId: string, chatId: string, sessionId: string | undefined) {
     console.log(`Using ${mcpBaseUrl} as the MCP Server.`)
@@ -237,11 +238,11 @@ class MCPSessionManager {
     for (const mcpTool of Object.values(mcpTools)) {
       tools[mcpTool.name] = tool({
         description: mcpTool.description || "",
-        parameters: jsonSchema(mcpTool.inputSchema),
-        execute: async (args: unknown, options: ToolExecutionOptions) => {
+        inputSchema: jsonSchema(mcpTool.inputSchema),
+        execute: async (args, options) => {
           return this.executeTool(mcpTool.name, args, {
             timeout: 180_000, // 3 minutes
-            ...options,
+            abortSignal: options?.abortSignal,
           })
         },
       })
@@ -289,7 +290,7 @@ class MCPSessionManager {
       // Execute the tool using the SDK
       const result = await this.client.callTool({
         name,
-        arguments: args,
+        arguments: args as { [x: string]: unknown } | undefined,
       })
 
       // Clear timeout if it was set

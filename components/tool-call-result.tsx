@@ -1,7 +1,7 @@
 import { getConnectedAccountById } from '@/app/(chat)/accounts/actions';
 import { useEffectiveSession } from '@/hooks/use-effective-session';
 import { prettifyToolName } from "@/lib/utils";
-import { UseChatHelpers } from '@ai-sdk/react';
+import type { AppendFn } from '@/lib/chat-types';
 import { createFrontendClient, type Account, type ConnectResult } from "@pipedream/sdk/browser";
 import { Check, ChevronRight, Globe, Lock } from "lucide-react";
 import Image from 'next/image';
@@ -28,7 +28,7 @@ export const ToolCallResult = ({
   name: string
   args: any
   result: any
-  append: UseChatHelpers['append'];
+  append: AppendFn;
   toolCallId?: string;
 }) => {
 
@@ -224,6 +224,9 @@ export const ToolCallResult = ({
   if (!externalUserId) return;
   const pd = createFrontendClient({
     externalUserId,
+    tokenCallback: async () => {
+      throw new Error('tokenCallback not implemented');
+    },
   });
 
   const connectAccount = () => {
@@ -341,4 +344,3 @@ export const ToolCallResult = ({
     </Collapsible>
   )
 }
-

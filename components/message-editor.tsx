@@ -1,17 +1,21 @@
 'use client';
 
-import { ChatRequestOptions, Message } from 'ai';
 import { Button } from './ui/button';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Textarea } from './ui/textarea';
 import { deleteTrailingMessages } from '@/app/(chat)/actions';
-import { UseChatHelpers } from '@ai-sdk/react';
+import type { TextUIPart } from 'ai';
+import type { ClientUIMessage } from '@/lib/chat-types';
 
 export type MessageEditorProps = {
-  message: Message;
+  message: ClientUIMessage;
   setMode: Dispatch<SetStateAction<'view' | 'edit'>>;
-  setMessages: UseChatHelpers['setMessages'];
-  reload: UseChatHelpers['reload'];
+  setMessages: (
+    messages:
+      | ClientUIMessage[]
+      | ((messages: ClientUIMessage[]) => ClientUIMessage[]),
+  ) => void;
+  reload: () => Promise<void>;
 };
 
 export function MessageEditor({
@@ -22,7 +26,15 @@ export function MessageEditor({
 }: MessageEditorProps) {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const [draftContent, setDraftContent] = useState<string>(message.content);
+  const extractText = (msg: ClientUIMessage) =>
+    msg.content ??
+    msg.parts
+      ?.filter((part): part is TextUIPart => part.type === 'text')
+      .map((part) => part.text)
+      .join('\n') ??
+    '';
+
+  const [draftContent, setDraftContent] = useState<string>(extractText(message));
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -75,7 +87,6 @@ export function MessageEditor({
               id: message.id,
             });
 
-            // @ts-expect-error todo: support UIMessage in setMessages
             setMessages((messages) => {
               const index = messages.findIndex((m) => m.id === message.id);
 

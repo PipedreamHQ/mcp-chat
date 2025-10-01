@@ -1,10 +1,10 @@
 import { myProvider } from '@/lib/ai/providers';
-import { createDocumentHandler } from '@/lib/artifacts/server';
+import { createDocumentHandler, emitArtifactStream } from '@/lib/artifacts/server';
 import { experimental_generateImage } from 'ai';
 
 export const imageDocumentHandler = createDocumentHandler<'image'>({
   kind: 'image',
-  onCreateDocument: async ({ title, dataStream }) => {
+  onCreateDocument: async ({ title, stream }) => {
     let draftContent = '';
 
     const { image } = await experimental_generateImage({
@@ -15,14 +15,14 @@ export const imageDocumentHandler = createDocumentHandler<'image'>({
 
     draftContent = image.base64;
 
-    dataStream.writeData({
+    emitArtifactStream(stream, {
       type: 'image-delta',
       content: image.base64,
     });
 
     return draftContent;
   },
-  onUpdateDocument: async ({ description, dataStream }) => {
+  onUpdateDocument: async ({ description, stream }) => {
     let draftContent = '';
 
     const { image } = await experimental_generateImage({
@@ -33,7 +33,7 @@ export const imageDocumentHandler = createDocumentHandler<'image'>({
 
     draftContent = image.base64;
 
-    dataStream.writeData({
+    emitArtifactStream(stream, {
       type: 'image-delta',
       content: image.base64,
     });

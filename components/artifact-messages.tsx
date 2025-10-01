@@ -1,22 +1,26 @@
 import { PreviewMessage } from './message';
 import { useScrollToBottom } from './use-scroll-to-bottom';
 import { Vote } from '@/lib/db/schema';
-import { UIMessage } from 'ai';
+import type { ChatStatus } from 'ai';
 import { memo } from 'react';
 import equal from 'fast-deep-equal';
 import { UIArtifact } from './artifact';
-import { UseChatHelpers } from '@ai-sdk/react';
+import type { AppendFn, ClientUIMessage, ReloadFn } from '@/lib/chat-types';
 
 interface ArtifactMessagesProps {
   chatId: string;
-  status: UseChatHelpers['status'];
+  status: ChatStatus;
   votes: Array<Vote> | undefined;
-  messages: Array<UIMessage>;
-  setMessages: UseChatHelpers['setMessages'];
-  reload: UseChatHelpers['reload'];
+  messages: Array<ClientUIMessage>;
+  setMessages: (
+    messages:
+      | ClientUIMessage[]
+      | ((messages: ClientUIMessage[]) => ClientUIMessage[]),
+  ) => void;
+  reload: ReloadFn;
   isReadonly: boolean;
   artifactStatus: UIArtifact['status'];
-  append: UseChatHelpers['append'];
+  append: AppendFn;
 }
 
 function PureArtifactMessages({

@@ -5,10 +5,9 @@ import type { Metadata } from 'next';
 import { auth } from '@/app/(auth)/auth';
 import { Chat } from '@/components/chat';
 import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
-import { DataStreamHandler } from '@/components/data-stream-handler';
 import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
 import { DBMessage } from '@/lib/db/schema';
-import { Attachment, UIMessage } from 'ai';
+import type { ClientUIMessage, ChatAttachment } from '@/lib/chat-types';
 import { BASE_METADATA, BASE_TITLE, isAuthDisabled } from '@/lib/constants';
 import { getEffectiveSession, shouldPersistData } from '@/lib/auth-utils';
 import { hasValidAPIKeys } from '@/lib/ai/api-keys';
@@ -94,17 +93,14 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     const chatModelFromCookie = cookieStore.get('chat-model');
 
     return (
-      <>
-        <Chat
-          id={id}
-          initialMessages={[]}
-          selectedChatModel={chatModelFromCookie?.value || DEFAULT_CHAT_MODEL}
-          selectedVisibilityType="private"
-          isReadonly={false}
-          hasAPIKeys={hasAPIKeys}
-        />
-        <DataStreamHandler id={id} />
-      </>
+      <Chat
+        id={id}
+        initialMessages={[] as ClientUIMessage[]}
+        selectedChatModel={chatModelFromCookie?.value || DEFAULT_CHAT_MODEL}
+        selectedVisibilityType="private"
+        isReadonly={false}
+        hasAPIKeys={hasAPIKeys}
+      />
     );
   }
 
@@ -130,7 +126,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     id,
   });
 
-  function convertToUIMessages(messages: Array<DBMessage>): Array<UIMessage> {
+  function convertToUIMessages(messages: Array<DBMessage>): Array<ClientUIMessage> {
     return messages.map((message) => {
       const textPart = Array.isArray(message.parts)
         ? message.parts.find((part: any) => part?.type === 'text' && typeof part.text === 'string')
@@ -142,12 +138,12 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 
       return {
         id: message.id,
-        parts: message.parts as UIMessage['parts'],
-        role: message.role as UIMessage['role'],
+        parts: message.parts as ClientUIMessage['parts'],
+        role: message.role as ClientUIMessage['role'],
         content,
         createdAt: message.createdAt,
-        experimental_attachments: (message.attachments as Array<Attachment>) ?? [],
-      };
+        experimental_attachments: (message.attachments as Array<ChatAttachment>) ?? [],
+      } as ClientUIMessage;
     });
   }
 
@@ -156,31 +152,25 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 
   if (!chatModelFromCookie) {
     return (
-      <>
-        <Chat
-          id={chat.id}
-          initialMessages={convertToUIMessages(messagesFromDb)}
-          selectedChatModel={DEFAULT_CHAT_MODEL}
-          selectedVisibilityType={chat.visibility}
-          isReadonly={session?.user?.id !== chat.userId}
-          hasAPIKeys={hasAPIKeys}
-        />
-        <DataStreamHandler id={id} />
-      </>
-    );
-  }
-
-  return (
-    <>
       <Chat
         id={chat.id}
         initialMessages={convertToUIMessages(messagesFromDb)}
-        selectedChatModel={chatModelFromCookie.value}
+        selectedChatModel={DEFAULT_CHAT_MODEL}
         selectedVisibilityType={chat.visibility}
         isReadonly={session?.user?.id !== chat.userId}
         hasAPIKeys={hasAPIKeys}
       />
-      <DataStreamHandler id={id} />
-    </>
+    );
+  }
+
+  return (
+    <Chat
+      id={chat.id}
+      initialMessages={convertToUIMessages(messagesFromDb)}
+      selectedChatModel={chatModelFromCookie.value}
+      selectedVisibilityType={chat.visibility}
+      isReadonly={session?.user?.id !== chat.userId}
+      hasAPIKeys={hasAPIKeys}
+    />
   );
 }

@@ -1,12 +1,12 @@
 import { myProvider } from '@/lib/ai/providers';
 import { sheetPrompt, updateDocumentPrompt } from '@/lib/ai/prompts';
-import { createDocumentHandler } from '@/lib/artifacts/server';
+import { createDocumentHandler, emitArtifactStream } from '@/lib/artifacts/server';
 import { streamObject } from 'ai';
 import { z } from 'zod';
 
 export const sheetDocumentHandler = createDocumentHandler<'sheet'>({
   kind: 'sheet',
-  onCreateDocument: async ({ title, dataStream }) => {
+  onCreateDocument: async ({ title, stream }) => {
     let draftContent = '';
 
     const { fullStream } = streamObject({
@@ -26,7 +26,7 @@ export const sheetDocumentHandler = createDocumentHandler<'sheet'>({
         const { csv } = object;
 
         if (csv) {
-          dataStream.writeData({
+          emitArtifactStream(stream, {
             type: 'sheet-delta',
             content: csv,
           });
@@ -36,14 +36,14 @@ export const sheetDocumentHandler = createDocumentHandler<'sheet'>({
       }
     }
 
-    dataStream.writeData({
+    emitArtifactStream(stream, {
       type: 'sheet-delta',
       content: draftContent,
     });
 
     return draftContent;
   },
-  onUpdateDocument: async ({ document, description, dataStream }) => {
+  onUpdateDocument: async ({ document, description, stream }) => {
     let draftContent = '';
 
     const { fullStream } = streamObject({
@@ -63,7 +63,7 @@ export const sheetDocumentHandler = createDocumentHandler<'sheet'>({
         const { csv } = object;
 
         if (csv) {
-          dataStream.writeData({
+          emitArtifactStream(stream, {
             type: 'sheet-delta',
             content: csv,
           });

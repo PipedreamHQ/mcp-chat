@@ -1,20 +1,23 @@
 'use client';
 
-import type { Attachment, UIMessage } from 'ai';
+import { DefaultChatTransport } from 'ai';
+import type { ChatAttachment } from '@/lib/chat-types';
 import { useChat } from '@ai-sdk/react';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
+import Link from 'next/link';
+import { toast } from 'sonner';
+
 import { ChatHeader } from '@/components/chat-header';
-import type { Vote } from '@/lib/db/schema';
-import { fetcher, generateUUID } from '@/lib/utils';
-import { Artifact } from './artifact';
+import { Artifact, artifactDefinitions, ArtifactKind } from './artifact';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
 import { VisibilityType } from './visibility-selector';
-import { useArtifactSelector } from '@/hooks/use-artifact';
-import { toast } from 'sonner';
-import Link from 'next/link';
+import { useArtifactSelector, useArtifact, initialArtifactData } from '@/hooks/use-artifact';
 import { useEffectiveSession } from '@/hooks/use-effective-session';
+import type { Vote } from '@/lib/db/schema';
+import type { AppendFn, ClientUIMessage, ReloadFn, ArtifactStreamDelta } from '@/lib/chat-types';
+import { fetcher, generateUUID } from '@/lib/utils';
 
 export function Chat({
   id,
@@ -25,7 +28,7 @@ export function Chat({
   hasAPIKeys,
 }: {
   id: string;
-  initialMessages: Array<UIMessage>;
+  initialMessages: ClientUIMessage[];
   selectedChatModel: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
@@ -35,45 +38,205 @@ export function Chat({
   const { data: session } = useEffectiveSession();
   const isSignedIn = !!session?.user;
 
+  const [input, setInput] = useState('');
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
+  const { artifact, setArtifact, setMetadata } = useArtifact();
+
+  const handleArtifactDelta = useCallback(
+    (delta: ArtifactStreamDelta) => {
+      const artifactDefinition = artifactDefinitions.find(
+        (definition) => definition.kind === artifact.kind,
+      );
+
+      artifactDefinition?.onStreamPart?.({
+        streamPart: delta,
+        setArtifact,
+        setMetadata,
+      });
+
+      setArtifact((currentArtifact) => {
+        const draft = currentArtifact ?? {
+          ...initialArtifactData,
+          status: 'streaming',
+        };
+
+        switch (delta.type) {
+          case 'id':
+            return {
+              ...draft,
+              documentId: delta.content as string,
+              status: 'streaming',
+            };
+          case 'title':
+            return {
+              ...draft,
+              title: delta.content as string,
+              status: 'streaming',
+            };
+          case 'kind':
+            return {
+              ...draft,
+              kind: delta.content as ArtifactKind,
+              status: 'streaming',
+            };
+          case 'clear':
+            return {
+              ...draft,
+              content: '',
+              status: 'streaming',
+            };
+          case 'finish':
+            return {
+              ...draft,
+              status: 'idle',
+            };
+          default:
+            return draft;
+        }
+      });
+    },
+    [artifact.kind, setArtifact, setMetadata],
+  );
+
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: '/api/chat',
+        prepareSendMessagesRequest: ({
+          messages: outgoingMessages,
+          id: chatId,
+          trigger,
+          messageId,
+        }) => ({
+          body: {
+            id: chatId,
+            messages: outgoingMessages,
+            selectedChatModel,
+            selectedVisibilityType,
+            trigger,
+            messageId,
+          },
+        }),
+      }),
+    [selectedChatModel, selectedVisibilityType],
+  );
+
   const {
     messages,
     setMessages,
-    handleSubmit,
-    input,
-    setInput,
-    append,
+    sendMessage,
     status,
     stop,
-    reload,
-  } = useChat({
+    regenerate,
+  } = useChat<ClientUIMessage>({
     id,
-    body: { id, selectedChatModel: selectedChatModel },
-    initialMessages,
-    experimental_throttle: 100,
-    sendExtraMessageFields: true,
+    messages: initialMessages,
+    transport,
     generateId: generateUUID,
     onFinish: () => {
       mutate('/api/history');
     },
     onError: (error) => {
-      // Check if error is a 401 unauthorized due to authentication
       if (error instanceof Error && error.message.includes('401')) {
-        // This error is likely from the submitForm auth check, so we don't need to show an error
         return;
       }
       toast.error('An error occurred, please try again!');
     },
+    onData: (part) => {
+      if (part.type === 'data-artifact') {
+        handleArtifactDelta(part.data as ArtifactStreamDelta);
+      }
+    },
   });
+
+  const sendUserMessage = useCallback(
+    async ({
+      text,
+      attachments: outgoingAttachments = [],
+    }: {
+      text?: string;
+      attachments?: ChatAttachment[];
+    }) => {
+      if (!text && outgoingAttachments.length === 0) {
+        return;
+      }
+
+      const parts: ClientUIMessage['parts'] = [];
+
+      if (text && text.length > 0) {
+        parts.push({ type: 'text', text });
+      }
+
+      for (const attachment of outgoingAttachments) {
+        parts.push({
+          type: 'file',
+          url: attachment.url,
+          mediaType: attachment.contentType ?? 'application/octet-stream',
+          filename: attachment.name,
+        });
+      }
+
+      const message: ClientUIMessage = {
+        id: generateUUID(),
+        role: 'user',
+        parts,
+        content: text ?? '',
+        experimental_attachments: outgoingAttachments,
+      };
+
+      await sendMessage(message);
+    },
+    [sendMessage],
+  );
+
+  const handleSubmit = useCallback(
+    async (
+      event?: { preventDefault?: () => void },
+      options?: { experimental_attachments?: ChatAttachment[] },
+    ) => {
+      event?.preventDefault?.();
+
+      const text = input.trim();
+      const outgoingAttachments = options?.experimental_attachments ?? attachments;
+
+      if (!text && outgoingAttachments.length === 0) {
+        return;
+      }
+
+      await sendUserMessage({ text: input, attachments: outgoingAttachments });
+
+      if (!options) {
+        setAttachments([]);
+      }
+
+      setInput('');
+    },
+    [attachments, input, sendUserMessage],
+  );
+
+  const append: AppendFn = useCallback(
+    async (message) => {
+      if ('content' in message && message.role === 'user') {
+        await sendUserMessage({ text: message.content });
+        return;
+      }
+
+      await sendMessage(message as ClientUIMessage);
+    },
+    [sendMessage, sendUserMessage],
+  );
+
+  const reload: ReloadFn = useCallback(async () => {
+    await regenerate();
+  }, [regenerate]);
 
   const { data: votes } = useSWR<Array<Vote>>(
     messages.length >= 2 ? `/api/vote?chatId=${id}` : null,
     fetcher,
   );
 
-  const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
 
-  // Show error if no API keys are configured
   if (hasAPIKeys === false) {
     return (
       <div className="flex flex-col items-center justify-center min-h-dvh bg-background px-4">
@@ -101,32 +264,39 @@ export function Chat({
             </p>
           </div>
           <div className="text-sm text-muted-foreground">
-            <p>Need help? Check the <Link href="https://github.com/PipedreamHQ/mcp-chat?tab=readme-ov-file#prerequisites" className="underline hover:text-foreground">README</Link> for setup instructions.</p>
+            <p>
+              Need help? Check the{' '}
+              <Link
+                href="https://github.com/PipedreamHQ/mcp-chat?tab=readme-ov-file#prerequisites"
+                className="underline hover:text-foreground"
+              >
+                README
+              </Link>{' '}
+              for setup instructions.
+            </p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Layout adjustment for signed-out users
   if (!isSignedIn) {
     return (
       <>
         <div className="flex flex-col min-w-0 h-dvh bg-background">
-          {/* Show welcome message only when there are no messages */}
           {messages.length === 0 ? (
             <div className="flex-1 flex flex-col justify-center items-center px-4">
               <div className="text-center mb-8 max-w-3xl">
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 mb-2">
-                  <h1 className="text-3xl font-bold max-w-[280px] sm:max-w-none leading-tight">Welcome to MCP Chat by Pipedream</h1>
+                  <h1 className="text-3xl font-bold max-w-[280px] sm:max-w-none leading-tight">
+                    Welcome to MCP Chat by Pipedream
+                  </h1>
                   <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300 mt-1 sm:mt-0">
                     Alpha
                   </span>
                 </div>
-                <p 
-                  className="text-muted-foreground max-w-sm mx-auto"
-                >
-                  Chat directly with 2,800+ APIs powered by {" "}
+                <p className="text-muted-foreground max-w-sm mx-auto">
+                  Chat directly with 2,800+ APIs powered by{' '}
                   <Link
                     className="font-medium underline underline-offset-4"
                     href="https://pipedream.com/docs/connect/mcp/developers"
@@ -136,8 +306,7 @@ export function Chat({
                   </Link>
                 </p>
               </div>
-              
-              {/* Centered input form for home page */}
+
               <form className="w-full bg-background mb-4 max-w-3xl">
                 {!isReadonly && (
                   <MultimodalInput
@@ -158,7 +327,6 @@ export function Chat({
             </div>
           ) : (
             <>
-              {/* Messages container - only show when there are messages */}
               <Messages
                 chatId={id}
                 status={status}
@@ -172,7 +340,6 @@ export function Chat({
                 isSignedIn={false}
               />
 
-              {/* Sticky input form at the bottom for chat pages */}
               <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
                 {!isReadonly && (
                   <MultimodalInput
@@ -214,7 +381,6 @@ export function Chat({
     );
   }
 
-  // Default layout for signed-in users
   return (
     <>
       <div className="flex flex-col min-w-0 h-dvh bg-background">

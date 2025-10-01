@@ -15,7 +15,10 @@ import type { AdapterAccountType } from "next-auth/adapters"
 
 export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
+  name: text("name"),
   email: varchar("email", { length: 64 }).unique(),
+  emailVerified: timestamp("emailVerified"),
+  image: text("image"),
   password: varchar("password", { length: 64 }),
 })
 
@@ -52,13 +55,11 @@ export const accounts = pgTable(
     id_token: text("id_token"),
     session_state: text("session_state"),
   },
-  (account) => [
-    {
-      compoundKey: primaryKey({
-        columns: [account.provider, account.providerAccountId],
-      }),
-    },
-  ]
+  (account) => ({
+    compoundKey: primaryKey({
+      columns: [account.provider, account.providerAccountId],
+    }),
+  })
 )
 
 // DEPRECATED: The following schema is deprecated and will be removed in the future.

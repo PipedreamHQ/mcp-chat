@@ -1,8 +1,7 @@
 import { Suggestion } from '@/lib/db/schema';
-import { UseChatHelpers } from '@ai-sdk/react';
 import { ComponentType, Dispatch, ReactNode, SetStateAction } from 'react';
-import { DataStreamDelta } from './data-stream-handler';
 import { UIArtifact } from './artifact';
+import type { AppendFn, ArtifactStreamDelta } from '@/lib/chat-types';
 
 export type ArtifactActionContext<M = any> = {
   content: string;
@@ -23,7 +22,7 @@ type ArtifactAction<M = any> = {
 };
 
 export type ArtifactToolbarContext = {
-  appendMessage: UseChatHelpers['append'];
+  appendMessage: AppendFn;
 };
 
 export type ArtifactToolbarItem = {
@@ -63,7 +62,7 @@ type ArtifactConfig<T extends string, M = any> = {
   onStreamPart: (args: {
     setMetadata: Dispatch<SetStateAction<M>>;
     setArtifact: Dispatch<SetStateAction<UIArtifact>>;
-    streamPart: DataStreamDelta;
+    streamPart: ArtifactStreamDelta;
   }) => void;
 };
 
@@ -77,7 +76,7 @@ export class Artifact<T extends string, M = any> {
   readonly onStreamPart: (args: {
     setMetadata: Dispatch<SetStateAction<M>>;
     setArtifact: Dispatch<SetStateAction<UIArtifact>>;
-    streamPart: DataStreamDelta;
+    streamPart: ArtifactStreamDelta;
   }) => void;
 
   constructor(config: ArtifactConfig<T, M>) {

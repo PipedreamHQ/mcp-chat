@@ -2,11 +2,11 @@ import { z } from 'zod';
 import { streamObject } from 'ai';
 import { myProvider } from '@/lib/ai/providers';
 import { codePrompt, updateDocumentPrompt } from '@/lib/ai/prompts';
-import { createDocumentHandler } from '@/lib/artifacts/server';
+import { createDocumentHandler, emitArtifactStream } from '@/lib/artifacts/server';
 
 export const codeDocumentHandler = createDocumentHandler<'code'>({
   kind: 'code',
-  onCreateDocument: async ({ title, dataStream }) => {
+  onCreateDocument: async ({ title, stream }) => {
     let draftContent = '';
 
     const { fullStream } = streamObject({
@@ -26,7 +26,7 @@ export const codeDocumentHandler = createDocumentHandler<'code'>({
         const { code } = object;
 
         if (code) {
-          dataStream.writeData({
+          emitArtifactStream(stream, {
             type: 'code-delta',
             content: code ?? '',
           });
@@ -38,7 +38,7 @@ export const codeDocumentHandler = createDocumentHandler<'code'>({
 
     return draftContent;
   },
-  onUpdateDocument: async ({ document, description, dataStream }) => {
+  onUpdateDocument: async ({ document, description, stream }) => {
     let draftContent = '';
 
     const { fullStream } = streamObject({
@@ -58,7 +58,7 @@ export const codeDocumentHandler = createDocumentHandler<'code'>({
         const { code } = object;
 
         if (code) {
-          dataStream.writeData({
+          emitArtifactStream(stream, {
             type: 'code-delta',
             content: code ?? '',
           });

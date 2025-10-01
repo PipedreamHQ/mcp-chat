@@ -1,11 +1,11 @@
 import { smoothStream, streamText } from 'ai';
 import { myProvider } from '@/lib/ai/providers';
-import { createDocumentHandler } from '@/lib/artifacts/server';
+import { createDocumentHandler, emitArtifactStream } from '@/lib/artifacts/server';
 import { updateDocumentPrompt } from '@/lib/ai/prompts';
 
 export const textDocumentHandler = createDocumentHandler<'text'>({
   kind: 'text',
-  onCreateDocument: async ({ title, dataStream }) => {
+  onCreateDocument: async ({ title, stream }) => {
     let draftContent = '';
 
     const { fullStream } = streamText({
@@ -20,20 +20,18 @@ export const textDocumentHandler = createDocumentHandler<'text'>({
       const { type } = delta;
 
       if (type === 'text-delta') {
-        const { textDelta } = delta;
+        draftContent += delta.text;
 
-        draftContent += textDelta;
-
-        dataStream.writeData({
+        emitArtifactStream(stream, {
           type: 'text-delta',
-          content: textDelta,
+          content: delta.text,
         });
       }
     }
 
     return draftContent;
   },
-  onUpdateDocument: async ({ document, description, dataStream }) => {
+  onUpdateDocument: async ({ document, description, stream }) => {
     let draftContent = '';
 
     const { fullStream } = streamText({
@@ -41,26 +39,16 @@ export const textDocumentHandler = createDocumentHandler<'text'>({
       system: updateDocumentPrompt(document.content, 'text'),
       experimental_transform: smoothStream({ chunking: 'word' }),
       prompt: description,
-      experimental_providerMetadata: {
-        openai: {
-          prediction: {
-            type: 'content',
-            content: document.content,
-          },
-        },
-      },
     });
 
     for await (const delta of fullStream) {
       const { type } = delta;
 
       if (type === 'text-delta') {
-        const { textDelta } = delta;
-
-        draftContent += textDelta;
-        dataStream.writeData({
+        draftContent += delta.text;
+        emitArtifactStream(stream, {
           type: 'text-delta',
-          content: textDelta,
+          content: delta.text,
         });
       }
     }

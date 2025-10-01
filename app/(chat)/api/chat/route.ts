@@ -11,23 +11,50 @@ import {
 import {
   generateUUID,
   getMostRecentUserMessage,
-  getTrailingMessageId,
 } from "@/lib/utils"
 import { getEffectiveSession, shouldPersistData } from "@/lib/auth-utils"
 import { MCPSessionManager } from "@/mods/mcp-client"
 import {
-  UIMessage,
-  appendResponseMessages,
-  createDataStreamResponse,
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
   smoothStream,
+  stepCountIs,
+  streamText,
 } from "ai"
+import type { TextUIPart, FileUIPart } from 'ai'
+import type { ClientUIMessage } from "@/lib/chat-types"
 import { generateTitleFromUserMessage } from "../../actions"
-import { streamText } from "./streamText"
 
 export const maxDuration = 60
 
 const MCP_BASE_URL = process.env.MCP_SERVER ? process.env.MCP_SERVER : "https://remote.mcp.pipedream.net"
 
+
+const normalizeMessage = (message: ClientUIMessage): ClientUIMessage => {
+  const textContent = message.parts
+    ?.filter((part): part is TextUIPart => part.type === 'text')
+    .map((part) => part.text)
+    .join('\n') ?? ''
+
+  const attachments = message.parts
+    ?.filter((part): part is FileUIPart => part.type === 'file')
+    .map((part) => ({
+      url: part.url,
+      name: (part as any).name ?? part.url,
+      contentType: part.mediaType,
+    })) ?? []
+
+  return {
+    ...message,
+    content: message.content ?? textContent,
+    experimental_attachments:
+      message.experimental_attachments ?? attachments,
+  }
+}
+
+const normalizeMessages = (messages: ClientUIMessage[]): ClientUIMessage[] =>
+  messages.map(normalizeMessage)
 
 export async function POST(request: Request) {
   try {
@@ -37,7 +64,7 @@ export async function POST(request: Request) {
       selectedChatModel,
     }: {
       id: string
-      messages: Array<UIMessage>
+      messages: Array<ClientUIMessage>
       selectedChatModel: string
     } = await request.json()
 
@@ -70,7 +97,10 @@ export async function POST(request: Request) {
 
     const userId = session.user.id
 
-    const userMessage = getMostRecentUserMessage(messages)
+    // Keep tool messages in conversation for context, but we'll filter before convertToModelMessages
+    let conversation = normalizeMessages(messages)
+
+    const userMessage = getMostRecentUserMessage(conversation)
 
     if (!userMessage) {
       return new Response("No user message found", { status: 400 })
@@ -142,67 +172,84 @@ export async function POST(request: Request) {
     console.log('DEBUG: Final sessionId for MCPSessionManager:', sessionId)
     const mcpSession = new MCPSessionManager(MCP_BASE_URL, userId, id, sessionId)
 
-    return createDataStreamResponse({
-      execute: async (dataStream) => {
+    const stream = createUIMessageStream({
+      originalMessages: conversation,
+      generateId: generateUUID,
+      execute: async ({ writer }) => {
         const system = systemPrompt({ selectedChatModel })
-        await streamText(
-          { dataStream, userMessage },
-          {
-            model: myProvider.languageModel(selectedChatModel),
-            system,
-            messages,
-            maxSteps: 20,
-            experimental_transform: smoothStream({ chunking: "word" }),
-            experimental_generateMessageId: generateUUID,
-            getTools: () => mcpSession.tools({ useCache: false }),
-            onFinish: async ({ response }) => {
-              if (userId && shouldPersistData()) {
-                try {
-                  const assistantId = getTrailingMessageId({
-                    messages: response.messages.filter(
-                      (message) => message.role === "assistant"
-                    ),
-                  })
 
-                  if (!assistantId) {
-                    throw new Error("No assistant message found!")
-                  }
+        // Filter out any tool messages before conversion (not supported in v5)
+        const conversationWithoutTools = conversation.filter((m: any) => m.role !== 'tool')
 
-                  const [, assistantMessage] = appendResponseMessages({
-                    messages: [userMessage],
-                    responseMessages: response.messages,
-                  })
+        const tools = await mcpSession.tools({ useCache: false })
 
-                  await saveMessages({
-                    messages: [
-                      {
-                        id: assistantId,
-                        chatId: id,
-                        role: assistantMessage.role,
-                        parts: assistantMessage.parts,
-                        attachments:
-                          assistantMessage.experimental_attachments ?? [],
-                        createdAt: new Date(),
-                      },
-                    ],
-                  })
-                } catch (error) {
-                  console.error("Failed to save chat")
-                }
-              }
-            },
-            experimental_telemetry: {
-              isEnabled: isProductionEnvironment,
-              functionId: "stream-text",
-            },
+        const result = streamText({
+          model: myProvider.languageModel(selectedChatModel),
+          system,
+          messages: convertToModelMessages(conversationWithoutTools),
+          tools,
+          maxSteps: 10, // Let SDK handle multiple steps automatically
+          experimental_transform: smoothStream({ chunking: "word" }),
+          onStepFinish: ({ stepIndex, stepType, finishReason }) => {
+            console.log(`Step ${stepIndex} (${stepType}) finished with reason: ${finishReason}`)
+          },
+          experimental_telemetry: {
+            isEnabled: isProductionEnvironment,
+            functionId: "stream-text",
+          },
+        })
+
+        // Merge stream and let SDK handle tool execution
+        writer.merge(result.toUIMessageStream())
+
+        // Wait for completion
+        const { finishReason, response } = await result
+
+        console.log(`All steps complete. Final reason: ${finishReason}`)
+
+        // Save to database
+        if (userId && shouldPersistData()) {
+          try {
+            const messagesWithoutTools = (response.messages as any[]).filter(
+              (m: any) => m.role !== 'tool'
+            )
+            const responseMessagesNormalized = normalizeMessages(
+              messagesWithoutTools as ClientUIMessage[],
+            )
+
+            const assistantMessage = responseMessagesNormalized
+              .filter((message) => message.role === 'assistant')
+              .at(-1)
+
+            if (assistantMessage) {
+              const assistantId = assistantMessage.id ?? generateUUID()
+
+              await saveMessages({
+                messages: [
+                  {
+                    id: assistantId,
+                    chatId: id,
+                    role: assistantMessage.role,
+                    parts: assistantMessage.parts,
+                    attachments:
+                      assistantMessage.experimental_attachments ?? [],
+                    createdAt: new Date(),
+                  },
+                ],
+              })
+            }
+          } catch (error) {
+            console.error("Failed to save chat:", error)
           }
-        )
+        }
       },
       onError: (error) => {
         console.error("Error:", error)
         return "Oops, an error occured!"
       },
     })
+
+    return createUIMessageStreamResponse({ stream })
   } catch (error) {
     return new Response("An error occurred while processing your request!", {
       status: 404,

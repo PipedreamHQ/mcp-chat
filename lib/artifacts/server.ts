@@ -3,10 +3,11 @@ import { imageDocumentHandler } from '@/artifacts/image/server';
 import { sheetDocumentHandler } from '@/artifacts/sheet/server';
 import { textDocumentHandler } from '@/artifacts/text/server';
 import { ArtifactKind } from '@/components/artifact';
-import { DataStreamWriter } from 'ai';
+import { UIMessageStreamWriter } from 'ai';
 import { Document } from '../db/schema';
 import { saveDocument } from '../db/queries';
 import { Session } from 'next-auth';
+import type { ArtifactStreamDelta } from '@/lib/chat-types';
 
 export interface SaveDocumentProps {
   id: string;
@@ -19,15 +20,22 @@ export interface SaveDocumentProps {
 export interface CreateDocumentCallbackProps {
   id: string;
   title: string;
-  dataStream: DataStreamWriter;
+  stream: UIMessageStreamWriter;
   session: Session;
 }
 
 export interface UpdateDocumentCallbackProps {
   document: Document;
   description: string;
-  dataStream: DataStreamWriter;
+  stream: UIMessageStreamWriter;
   session: Session;
+}
+
+export function emitArtifactStream(
+  stream: UIMessageStreamWriter,
+  delta: ArtifactStreamDelta,
+) {
+  stream.write({ type: 'data-artifact', data: delta });
 }
 
 export interface DocumentHandler<T = ArtifactKind> {
@@ -47,7 +55,7 @@ export function createDocumentHandler<T extends ArtifactKind>(config: {
       const draftContent = await config.onCreateDocument({
         id: args.id,
         title: args.title,
-        dataStream: args.dataStream,
+        stream: args.stream,
         session: args.session,
       });
 
@@ -67,7 +75,7 @@ export function createDocumentHandler<T extends ArtifactKind>(config: {
       const draftContent = await config.onUpdateDocument({
         document: args.document,
         description: args.description,
-        dataStream: args.dataStream,
+        stream: args.stream,
         session: args.session,
       });
 
