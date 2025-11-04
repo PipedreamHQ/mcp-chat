@@ -1,5 +1,6 @@
-import { Toaster } from 'sonner';
 import type { Metadata } from 'next';
+import Script from 'next/script';
+import { Toaster } from 'sonner';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -13,6 +14,8 @@ export const metadata: Metadata = BASE_METADATA;
 export const viewport = {
   maximumScale: 1, // Disable auto-zoom on mobile Safari
 };
+
+const COOKIEBOT_ID = process.env.NEXT_PUBLIC_COOKIEBOT_ID;
 
 const geist = Geist({
   subsets: ['latin'],
@@ -67,6 +70,16 @@ export default async function RootLayout({
             __html: THEME_COLOR_SCRIPT,
           }}
         />
+        {COOKIEBOT_ID ? (
+          <Script
+            id="Cookiebot"
+            src="https://consent.cookiebot.com/uc.js"
+            data-cbid={COOKIEBOT_ID}
+            data-blockingmode="auto"
+            strategy="afterInteractive"
+            type="text/javascript"
+          />
+        ) : null}
       </head>
       <body className="antialiased">
         <DatadogInit />
