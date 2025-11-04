@@ -1,7 +1,8 @@
-import { getConnectedAccounts } from './actions';
 import { ConnectedAccounts } from '@/components/connected-accounts';
 import { ChatHeader } from '@/components/chat-header';
+import { ManageCookieSettingsLink } from '@/components/manage-cookie-settings-link';
 import { getEffectiveSession, shouldPersistData } from '@/lib/auth-utils';
+import { getConnectedAccounts } from './actions';
 
 export default async function AccountsPage() {
   const session = await getEffectiveSession();
@@ -24,6 +25,9 @@ export default async function AccountsPage() {
           <h2 className="text-3xl font-bold tracking-tight">Connected Accounts</h2>
           <div className="mt-6">
             <ConnectedAccounts accounts={accounts} />
+          </div>
+          <div className="mt-8">
+            <ManageCookieSettingsLink />
           </div>
         </div>
       </div>
