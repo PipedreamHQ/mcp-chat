@@ -1,14 +1,14 @@
-import { motion } from 'framer-motion';
-import Link from 'next/link';
-import Image from 'next/image';
+import { motion } from "framer-motion";
+import Link from "next/link";
+import Image from "next/image";
 
-import { ChatBubbleIcon } from './icons';
-import { InfoBanner } from './info-banner';
-import { useAuthContext } from './session-provider';
+import { ChatBubbleIcon } from "./icons";
+import { InfoBanner } from "./info-banner";
+import { useAuthContext } from "./session-provider";
 
 export const Overview = () => {
   const { isAuthDisabled, isPersistenceDisabled } = useAuthContext();
-  
+
   return (
     <motion.div
       key="overview"
@@ -44,18 +44,22 @@ export const Overview = () => {
             to let you chat with any app.
           </p>
           <p>
-            With {" "}
+            With{" "}
             <Link
               className="font-medium underline underline-offset-4"
               href="https://mcp.pipedream.com/"
               target="_blank"
             >
-              2,900+ built-in APIs
+              3,000+ built-in APIs
             </Link>{" "}
-             {" "}and 10k+ tools, use Pipedream MCP to supercharge your AI app or agent.
+            and 10k+ tools, use Pipedream MCP to supercharge your AI app or
+            agent.
           </p>
         </div>
-        <InfoBanner isAuthDisabled={isAuthDisabled} isPersistenceDisabled={isPersistenceDisabled} />
+        <InfoBanner
+          isAuthDisabled={isAuthDisabled}
+          isPersistenceDisabled={isPersistenceDisabled}
+        />
       </div>
     </motion.div>
   );
