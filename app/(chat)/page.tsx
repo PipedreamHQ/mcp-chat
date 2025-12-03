@@ -16,11 +16,11 @@ export default function Page() {
 }
 
 async function NewChatPage() {
-  const id = generateUUID();
-  const hasAPIKeys = hasValidAPIKeys();
-
   const cookieStore = await cookies();
   const modelIdFromCookie = cookieStore.get('chat-model');
+
+  const id = generateUUID();
+  const hasAPIKeys = hasValidAPIKeys();
 
   if (!modelIdFromCookie) {
     return (
