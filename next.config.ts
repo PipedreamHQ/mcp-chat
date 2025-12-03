@@ -9,9 +9,7 @@ if (envFilePath) {
 }
 
 const nextConfig: NextConfig = {
-  experimental: {
-    ppr: false,
-  },
+  cacheComponents: true,
   images: {
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",

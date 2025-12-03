@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 
 import { auth } from '@/app/(auth)/auth';
@@ -82,9 +83,16 @@ export async function generateMetadata(
   };
 }
 
-export default async function Page(props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
-  const { id } = params;
+export default function Page(props: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense fallback={<div className="flex h-dvh" />}>
+      <ChatPage params={props.params} />
+    </Suspense>
+  );
+}
+
+async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const hasAPIKeys = hasValidAPIKeys();
 
   // In dev mode without auth, create a fresh chat with no messages
