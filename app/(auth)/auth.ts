@@ -20,6 +20,7 @@ export const {
   signOut,
 } = NextAuth({
   ...authConfig,
+  secret: process.env.AUTH_SECRET,
 
   adapter: DrizzleAdapter(db, {
     usersTable: user,
