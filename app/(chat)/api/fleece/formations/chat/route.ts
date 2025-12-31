@@ -11,7 +11,7 @@ import {
   getModel,
   DEFAULT_MODEL_NAME,
 } from "@/lib/ai/models"
-import { TRAINING_SYSTEM_PROMPT } from "@/lib/ai/fleece-prompts"
+import { FORMATIONS_SYSTEM_PROMPT } from "@/lib/ai/fleece-prompts"
 import { saveMessages } from "@/lib/db/queries"
 import {
   saveTrainingCourse,
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
       const result = streamText({
         model: model.apiConfiguration,
-        system: TRAINING_SYSTEM_PROMPT,
+        system: FORMATIONS_SYSTEM_PROMPT,
         messages,
         maxSteps: MAX_STEPS,
         onFinish: async ({ text, finishReason }: StreamTextOnFinishCallbackDetails<any>) => {
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
       result.mergeIntoDataStream(dataStream)
     },
     onError: (error: Error) => {
-      console.error("Training chat error:", error)
+      console.error("Formations chat error:", error)
       return error.message || "An error occurred"
     },
   })

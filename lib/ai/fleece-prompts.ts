@@ -175,9 +175,9 @@ Please help me:
 
 Let's create a production-ready automation that delivers real value!`
 
-// ===== FLEECE AI TRAINING PROMPTS =====
+// ===== FLEECE AI FORMATIONS PROMPTS =====
 
-export const TRAINING_SYSTEM_PROMPT = `You are an expert instructional designer and e-learning specialist focused on creating engaging, effective training courses for AI automation and workflow management.
+export const FORMATIONS_SYSTEM_PROMPT = `You are an expert instructional designer and e-learning specialist focused on creating engaging, effective training courses for AI automation and workflow management.
 
 Your role is to:
 1. **Analyze deployed workflows** to understand what needs to be taught
@@ -278,7 +278,7 @@ Your role is to:
 
 Focus on creating courses that genuinely help users master their new automation workflows and become confident power users.`
 
-export const TRAINING_USER_PROMPT = `I need to create a training course for a newly deployed automation workflow.
+export const FORMATIONS_USER_PROMPT = `I need to create a training course for a newly deployed automation workflow.
 
 Please help me:
 1. Analyze the workflow to understand what needs to be taught
@@ -292,47 +292,47 @@ The goal is to ensure users can confidently use and maintain their new automatio
 
 // ===== SHARED PROMPTS =====
 
-export const FLEECE_AI_INTRO = `Welcome to Fleece AI - Your complete AI automation ecosystem for business transformation!
+export const FLEECE_AI_INTRO = `Bienvenue sur Fleece AI - Votre écosystème complet d'automatisation IA pour la transformation digitale de votre entreprise !
 
-**Fleece AI has 3 integrated services:**
+**Fleece AI comprend 3 services intégrés :**
 
 🔍 **Fleece AI Consulting**
-   Audit your business processes and discover AI automation opportunities
+   Auditez vos processus métier et découvrez les opportunités d'automatisation IA
 
 ⚡ **Fleece AI Automatisations**
-   Transform recommendations into live workflows with Pipedream integrations
+   Transformez les recommandations en workflows actifs avec les intégrations Pipedream
 
-🎓 **Fleece AI Training**
-   Master your new automations with personalized courses and certifications
+🎓 **Fleece AI Formations**
+   Maîtrisez vos nouvelles automations avec des cours personnalisés et des certifications
 
-**How it works:**
-1. **Consulting** analyzes your processes → generates audit report with recommendations
-2. **Automatisations** receives recommendations → builds and deploys workflows
-3. **Training** detects new workflows → creates personalized courses
+**Comment ça fonctionne :**
+1. **Consulting** analyse vos processus → génère un rapport d'audit avec recommandations
+2. **Automatisations** reçoit les recommandations → construit et déploie les workflows
+3. **Formations** détecte les nouveaux workflows → crée des cours personnalisés
 
-Let's transform your business with AI automation!`
+Transformons votre entreprise avec l'automatisation IA !`
 
-export function getServicePrompt(service: 'consulting' | 'automations' | 'training') {
+export function getServicePrompt(service: 'consulting' | 'automations' | 'formations') {
   switch (service) {
     case 'consulting':
       return CONSULTING_SYSTEM_PROMPT
     case 'automations':
       return AUTOMATIONS_SYSTEM_PROMPT
-    case 'training':
-      return TRAINING_SYSTEM_PROMPT
+    case 'formations':
+      return FORMATIONS_SYSTEM_PROMPT
     default:
       return CONSULTING_SYSTEM_PROMPT
   }
 }
 
-export function getUserPrompt(service: 'consulting' | 'automations' | 'training') {
+export function getUserPrompt(service: 'consulting' | 'automations' | 'formations') {
   switch (service) {
     case 'consulting':
       return CONSULTING_USER_PROMPT
     case 'automations':
       return AUTOMATIONS_USER_PROMPT
-    case 'training':
-      return TRAINING_USER_PROMPT
+    case 'formations':
+      return FORMATIONS_USER_PROMPT
     default:
       return CONSULTING_USER_PROMPT
   }
