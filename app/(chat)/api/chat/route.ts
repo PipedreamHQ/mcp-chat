@@ -106,41 +106,8 @@ export async function POST(request: Request) {
       })
     }
 
-    // get any existing mcp sessions from the mcp server
-    const mcpSessionUrl = `${MCP_BASE_URL}/v1/${userId}/sessions`
-    console.log('DEBUG: Fetching MCP sessions from:', mcpSessionUrl)
-    console.log('DEBUG: Looking for chat ID:', id)
-    
-    const mcpSessionsResp = await fetch(mcpSessionUrl)
-    let sessionId = undefined
-    
-    console.log('DEBUG: MCP sessions response:', {
-      ok: mcpSessionsResp.ok,
-      status: mcpSessionsResp.status,
-      statusText: mcpSessionsResp.statusText,
-      headers: Object.fromEntries(mcpSessionsResp.headers.entries())
-    })
-    
-    if (mcpSessionsResp.ok) {
-      const body = await mcpSessionsResp.json()
-      console.log('DEBUG: MCP sessions body:', body)
-      console.log('DEBUG: Looking for body[id]:', body[id])
-      console.log('DEBUG: Looking for body.mcpSessions[id]:', body.mcpSessions ? body.mcpSessions[id] : 'mcpSessions not found')
-      
-      // Try both formats to see which one works
-      if (body.mcpSessions && body.mcpSessions[id]) {
-        sessionId = body.mcpSessions[id]
-        console.log('DEBUG: Found sessionId in body.mcpSessions[id]:', sessionId)
-      } else if (body[id]) {
-        sessionId = body[id]
-        console.log('DEBUG: Found sessionId in body[id]:', sessionId)
-      }
-    } else {
-      console.error('DEBUG: MCP sessions fetch failed:', await mcpSessionsResp.text())
-    }
-
-    console.log('DEBUG: Final sessionId for MCPSessionManager:', sessionId)
-    const mcpSession = new MCPSessionManager(MCP_BASE_URL, userId, id, sessionId)
+    // MCP server is stateless - state is restored via chatId header, no session IDs needed
+    const mcpSession = new MCPSessionManager(MCP_BASE_URL, userId, id)
 
     return createDataStreamResponse({
       execute: async (dataStream) => {

@@ -121,17 +121,15 @@ class MCPSessionManager {
   private client: MCPClient | null = null
   private toolsCache: ToolSet | null = null
   private connectionPromise: Promise<void> | null = null
-  private sessionId: string | undefined
   private chatId: string
   private userId: string
 
-  constructor(mcpBaseUrl: string, userId: string, chatId: string, sessionId: string | undefined) {
+  constructor(mcpBaseUrl: string, userId: string, chatId: string) {
     console.log(`Using ${mcpBaseUrl} as the MCP Server.`)
     this.serverUrl = `${mcpBaseUrl}/v1/${userId}`
-    this.sessionId = sessionId
     this.chatId = chatId
     this.userId = userId
-    console.log(`Creating MCP Session: ${this.serverUrl} chatId=${this.chatId} sessionId=${this.sessionId}`)
+    console.log(`Creating MCP Session: ${this.serverUrl} chatId=${this.chatId}`)
   }
 
   /**
@@ -145,12 +143,12 @@ class MCPSessionManager {
     this.connectionPromise = new Promise(async (resolve, reject) => {
       try {
         const headers = await pdHeaders(this.userId)
-        
-        // Create MCP client using the SDK - back to main branch approach
+
+        // Create MCP client using the SDK
+        // Server is stateless - state restored via x-pd-mcp-chat-id header
         const transport = new StreamableHTTPClientTransport(
           new URL(this.serverUrl),
           {
-            sessionId: this.sessionId,
             requestInit: {
               headers: {
                 "x-pd-mcp-chat-id": this.chatId,
@@ -172,7 +170,6 @@ class MCPSessionManager {
 
         // Initialize the connection
         await this.client.connect(transport)
-        this.sessionId = transport.sessionId
         console.log("MCP connection established")
         resolve()
       } catch (error) {
@@ -195,10 +192,6 @@ class MCPSessionManager {
     }
     this.connectionPromise = null
     this.toolsCache = null
-
-    if (this.keepalive) {
-      clearInterval(this.keepalive)
-    }
   }
 
   /**
