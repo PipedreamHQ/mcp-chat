@@ -126,7 +126,7 @@ class MCPSessionManager {
 
   constructor(mcpBaseUrl: string, userId: string, chatId: string) {
     console.log(`Using ${mcpBaseUrl} as the MCP Server.`)
-    this.serverUrl = `${mcpBaseUrl}/v1/${userId}`
+    this.serverUrl = mcpBaseUrl
     this.chatId = chatId
     this.userId = userId
     console.log(`Creating MCP Session: ${this.serverUrl} chatId=${this.chatId}`)
