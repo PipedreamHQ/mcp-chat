@@ -7,7 +7,7 @@ import { auth } from '@/app/(auth)/auth';
 import { Chat } from '@/components/chat';
 import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
 import { DataStreamHandler } from '@/components/data-stream-handler';
-import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
+import { DEFAULT_CHAT_MODEL, DEFAULT_TOOL_MODE } from '@/lib/ai/models';
 import { DBMessage } from '@/lib/db/schema';
 import { Attachment, UIMessage } from 'ai';
 import { BASE_METADATA, BASE_TITLE, isAuthDisabled } from '@/lib/constants';
@@ -100,6 +100,7 @@ async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await getEffectiveSession();
     const cookieStore = await cookies();
     const chatModelFromCookie = cookieStore.get('chat-model');
+    const toolModeFromCookie = cookieStore.get('tool-mode');
 
     return (
       <>
@@ -107,6 +108,7 @@ async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
           id={id}
           initialMessages={[]}
           selectedChatModel={chatModelFromCookie?.value || DEFAULT_CHAT_MODEL}
+          selectedToolMode={toolModeFromCookie?.value ?? DEFAULT_TOOL_MODE}
           selectedVisibilityType="private"
           isReadonly={false}
           hasAPIKeys={hasAPIKeys}
@@ -161,29 +163,16 @@ async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
 
   const cookieStore = await cookies();
   const chatModelFromCookie = cookieStore.get('chat-model');
-
-  if (!chatModelFromCookie) {
-    return (
-      <>
-        <Chat
-          id={chat.id}
-          initialMessages={convertToUIMessages(messagesFromDb)}
-          selectedChatModel={DEFAULT_CHAT_MODEL}
-          selectedVisibilityType={chat.visibility}
-          isReadonly={session?.user?.id !== chat.userId}
-          hasAPIKeys={hasAPIKeys}
-        />
-        <DataStreamHandler id={id} />
-      </>
-    );
-  }
+  const toolModeFromCookie = cookieStore.get('tool-mode');
+  const selectedToolMode = toolModeFromCookie?.value ?? DEFAULT_TOOL_MODE;
 
   return (
     <>
       <Chat
         id={chat.id}
         initialMessages={convertToUIMessages(messagesFromDb)}
-        selectedChatModel={chatModelFromCookie.value}
+        selectedChatModel={chatModelFromCookie?.value ?? DEFAULT_CHAT_MODEL}
+        selectedToolMode={selectedToolMode}
         selectedVisibilityType={chat.visibility}
         isReadonly={session?.user?.id !== chat.userId}
         hasAPIKeys={hasAPIKeys}

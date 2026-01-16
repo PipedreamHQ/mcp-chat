@@ -16,6 +16,11 @@ export async function saveChatModelAsCookie(model: string) {
   cookieStore.set('chat-model', model);
 }
 
+export async function saveToolModeAsCookie(mode: string) {
+  const cookieStore = await cookies();
+  cookieStore.set('tool-mode', mode);
+}
+
 export async function generateTitleFromUserMessage({
   message,
 }: {

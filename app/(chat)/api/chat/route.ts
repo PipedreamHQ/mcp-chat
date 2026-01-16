@@ -35,10 +35,12 @@ export async function POST(request: Request) {
       id,
       messages,
       selectedChatModel,
+      selectedToolMode,
     }: {
       id: string
       messages: Array<UIMessage>
       selectedChatModel: string
+      selectedToolMode: string
     } = await request.json()
 
     const session = await getEffectiveSession()
@@ -107,7 +109,7 @@ export async function POST(request: Request) {
     }
 
     // MCP server is stateless - state is restored via chatId header, no session IDs needed
-    const mcpSession = new MCPSessionManager(MCP_BASE_URL, userId, id)
+    const mcpSession = new MCPSessionManager(MCP_BASE_URL, userId, id, selectedToolMode)
 
     return createDataStreamResponse({
       execute: async (dataStream) => {

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { useEffectiveSession } from '@/hooks/use-effective-session'
 
 import { ModelSelector } from "@/components/model-selector"
+import { ToolModeSelector } from "@/components/tool-mode-selector"
 import { SidebarToggle } from "@/components/sidebar-toggle"
 import { Button } from "@/components/ui/button"
 import { GitHubButton } from "@/components/github-button"
@@ -17,11 +18,15 @@ import { VisibilitySelector, VisibilityType } from "./visibility-selector"
 function PureChatHeader({
   chatId,
   selectedModelId,
+  selectedToolMode,
+  onToolModeChange,
   selectedVisibilityType,
   isReadonly,
 }: {
   chatId: string
   selectedModelId: string
+  selectedToolMode: string
+  onToolModeChange?: (mode: string) => void
   selectedVisibilityType: VisibilityType
   isReadonly: boolean
 }) {
@@ -47,6 +52,16 @@ function PureChatHeader({
         <div className="mt-1 md:hidden">
           <ModelSelector
             selectedModelId={selectedModelId}
+            className=""
+          />
+        </div>
+      )}
+
+      {!isReadonly && (
+        <div className="mt-1 md:hidden">
+          <ToolModeSelector
+            selectedToolMode={selectedToolMode}
+            onToolModeChange={onToolModeChange}
             className=""
           />
         </div>
@@ -119,6 +134,16 @@ function PureChatHeader({
 
       {!isReadonly && (
         <div className="mt-1 hidden md:block">
+          <ToolModeSelector
+            selectedToolMode={selectedToolMode}
+            onToolModeChange={onToolModeChange}
+            className=""
+          />
+        </div>
+      )}
+
+      {!isReadonly && (
+        <div className="mt-1 hidden md:block">
           <VisibilitySelector
             chatId={chatId}
             selectedVisibilityType={selectedVisibilityType}
@@ -139,5 +164,8 @@ function PureChatHeader({
 }
 
 export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
-  return prevProps.selectedModelId === nextProps.selectedModelId
+  return (
+    prevProps.selectedModelId === nextProps.selectedModelId &&
+    prevProps.selectedToolMode === nextProps.selectedToolMode
+  )
 })

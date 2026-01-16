@@ -123,13 +123,15 @@ class MCPSessionManager {
   private connectionPromise: Promise<void> | null = null
   private chatId: string
   private userId: string
+  private toolMode: string
 
-  constructor(mcpBaseUrl: string, userId: string, chatId: string) {
+  constructor(mcpBaseUrl: string, userId: string, chatId: string, toolMode: string = "sub-agent") {
     console.log(`Using ${mcpBaseUrl} as the MCP Server.`)
     this.serverUrl = mcpBaseUrl
     this.chatId = chatId
     this.userId = userId
-    console.log(`Creating MCP Session: ${this.serverUrl} chatId=${this.chatId}`)
+    this.toolMode = toolMode
+    console.log(`Creating MCP Session: ${this.serverUrl} chatId=${this.chatId} toolMode=${this.toolMode}`)
   }
 
   /**
@@ -152,6 +154,9 @@ class MCPSessionManager {
             requestInit: {
               headers: {
                 "x-pd-mcp-chat-id": this.chatId,
+                "x-pd-tool-mode": this.toolMode,
+                // full-config mode requires appDiscovery or apps list
+                ...(this.toolMode === "full-config" && { "x-pd-app-discovery": "true" }),
                 ...headers,
               }
             } as RequestInit,

@@ -14,9 +14,10 @@ export default async function AccountsPage() {
   
   return (
     <div className="flex-1 flex flex-col min-h-screen">
-      <ChatHeader 
-        chatId="accounts" 
-        selectedModelId="" 
+      <ChatHeader
+        chatId="accounts"
+        selectedModelId=""
+        selectedToolMode=""
         selectedVisibilityType="private"
         isReadonly={true}
       />

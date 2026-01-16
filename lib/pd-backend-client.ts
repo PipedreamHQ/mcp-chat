@@ -16,7 +16,5 @@ export const pdHeaders = async (exuid: string) => {
     "x-pd-project-id": process.env.PIPEDREAM_PROJECT_ID,
     "x-pd-environment": process.env.PIPEDREAM_PROJECT_ENVIRONMENT,
     "x-pd-external-user-id": exuid,
-    "x-pd-tool-mode": "full-config",
-    "x-pd-app-discovery": "true",
   };
 };

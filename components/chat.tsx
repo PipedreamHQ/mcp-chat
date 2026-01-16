@@ -2,7 +2,7 @@
 
 import type { Attachment, UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { ChatHeader } from "@/components/chat-header";
 import type { Vote } from "@/lib/db/schema";
@@ -15,11 +15,13 @@ import { useArtifactSelector } from "@/hooks/use-artifact";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useEffectiveSession } from "@/hooks/use-effective-session";
+import { saveToolModeAsCookie } from "@/app/(chat)/actions";
 
 export function Chat({
   id,
   initialMessages,
   selectedChatModel,
+  selectedToolMode: initialToolMode,
   selectedVisibilityType,
   isReadonly,
   hasAPIKeys,
@@ -27,6 +29,7 @@ export function Chat({
   id: string;
   initialMessages: Array<UIMessage>;
   selectedChatModel: string;
+  selectedToolMode: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
   hasAPIKeys?: boolean;
@@ -34,6 +37,13 @@ export function Chat({
   const { mutate } = useSWRConfig();
   const { data: session } = useEffectiveSession();
   const isSignedIn = !!session?.user;
+
+  const [currentToolMode, setCurrentToolMode] = useState(initialToolMode);
+
+  const handleToolModeChange = useCallback((newMode: string) => {
+    setCurrentToolMode(newMode);
+    saveToolModeAsCookie(newMode);
+  }, []);
 
   const {
     messages,
@@ -47,7 +57,7 @@ export function Chat({
     reload,
   } = useChat({
     id,
-    body: { id, selectedChatModel: selectedChatModel },
+    body: { id, selectedChatModel, selectedToolMode: currentToolMode },
     initialMessages,
     experimental_throttle: 100,
     sendExtraMessageFields: true,
@@ -244,6 +254,8 @@ export function Chat({
         <ChatHeader
           chatId={id}
           selectedModelId={selectedChatModel}
+          selectedToolMode={currentToolMode}
+          onToolModeChange={handleToolModeChange}
           selectedVisibilityType={selectedVisibilityType}
           isReadonly={isReadonly}
         />
