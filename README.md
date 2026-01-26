@@ -63,6 +63,14 @@ DISABLE_PERSISTENCE=true
 
 2. Install dependencies and start the app:
 
+We recommend using [asdf](https://asdf-vm.com/) to manage core deps like Node. Install it and run
+
+```bash
+asdf install
+```
+
+Then:
+
 ```bash
 pnpm install
 pnpm dev

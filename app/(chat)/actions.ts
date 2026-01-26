@@ -5,10 +5,12 @@ import { cookies } from 'next/headers';
 
 import {
   deleteMessagesByChatIdAfterTimestamp,
+  getChatById,
   getMessageById,
   updateChatVisiblityById,
 } from '@/lib/db/queries';
 import { VisibilityType } from '@/components/visibility-selector';
+import { getEffectiveSession } from '@/lib/auth-utils';
 import { myProvider } from '@/lib/ai/providers';
 
 export async function saveChatModelAsCookie(model: string) {
@@ -35,7 +37,20 @@ export async function generateTitleFromUserMessage({
 }
 
 export async function deleteTrailingMessages({ id }: { id: string }) {
+  const session = await getEffectiveSession();
+  if (!session?.user?.id) {
+    throw new Error('Unauthorized');
+  }
+
   const [message] = await getMessageById({ id });
+  if (!message) {
+    throw new Error('Message not found');
+  }
+
+  const chat = await getChatById({ id: message.chatId });
+  if (!chat || chat.userId !== session.user.id) {
+    throw new Error('Chat not found or not owned by user');
+  }
 
   await deleteMessagesByChatIdAfterTimestamp({
     chatId: message.chatId,
@@ -50,5 +65,15 @@ export async function updateChatVisibility({
   chatId: string;
   visibility: VisibilityType;
 }) {
+  const session = await getEffectiveSession();
+  if (!session?.user?.id) {
+    throw new Error('Unauthorized');
+  }
+
+  const chat = await getChatById({ id: chatId });
+  if (!chat || chat.userId !== session.user.id) {
+    throw new Error('Chat not found or not owned by user');
+  }
+
   await updateChatVisiblityById({ chatId, visibility });
 }
