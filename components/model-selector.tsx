@@ -1,6 +1,7 @@
 'use client';
 
 import { startTransition, useMemo, useOptimistic, useState } from 'react';
+import useSWR from 'swr';
 
 import { saveChatModelAsCookie } from '@/app/(chat)/actions';
 import { Button } from '@/components/ui/button';
@@ -25,9 +26,16 @@ export function ModelSelector({
   const [optimisticModelId, setOptimisticModelId] =
     useOptimistic(selectedModelId);
 
+  const { data: availableModels } = useSWR('/api/models', (url: string) =>
+    fetch(url).then((r) => r.json()),
+    { dedupingInterval: 3_600_000 }
+  );
+
+  const models = availableModels ?? chatModels;
+
   const selectedChatModel = useMemo(
-    () => chatModels.find((chatModel) => chatModel.id === optimisticModelId),
-    [optimisticModelId],
+    () => models.find((m: { id: string }) => m.id === optimisticModelId),
+    [optimisticModelId, models],
   );
 
   return (
@@ -49,7 +57,7 @@ export function ModelSelector({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[300px]">
-        {chatModels.map((chatModel) => {
+        {models.map((chatModel: { id: string; name: string; description: string }) => {
           const { id } = chatModel;
 
           return (
